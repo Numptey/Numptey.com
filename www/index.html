@@ -1,0 +1,2351 @@
+.sign-in-option<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://firebasestorage.googleapis.com; font-src 'self' data:;">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <title>Numptey</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        #canvas-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .sidenav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(0, 200, 255, 0.2);
+            z-index: 1000;
+            transition: width 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+            width: 80px;
+            overflow: hidden;
+            will-change: width;
+        }
+
+        .sidenav.expanded {
+            width: 250px;
+        }
+
+        .nav-header {
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid rgba(0, 200, 255, 0.1);
+            min-height: 80px;
+            position: relative;
+        }
+
+        .logo {
+            font-size: 1.3rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #00c8ff, #0080ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            white-space: nowrap;
+            transition: opacity 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+            overflow: hidden;
+            opacity: 0;
+            position: absolute;
+            left: 1.5rem;
+        }
+
+        .sidenav.expanded .logo {
+            opacity: 1;
+        }
+
+        .toggle-btn {
+            background: none;
+            border: none;
+            color: #00c8ff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            right: 1rem;
+            transition: right 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+
+        .sidenav:not(.expanded) .toggle-btn {
+            right: calc(50% - 20px);
+        }
+
+        .toggle-btn:hover {
+            transform: scale(1.1);
+            transition: transform 0.3s, right 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+
+        .hamburger {
+            width: 24px;
+            height: 20px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .hamburger span {
+            display: block;
+            width: 100%;
+            height: 2px;
+            background: #00c8ff;
+            transition: all 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+            transform-origin: center;
+            will-change: transform, opacity;
+        }
+
+        .sidenav.expanded .hamburger span:nth-child(1) {
+            transform: translateY(9px) rotate(45deg);
+        }
+
+        .sidenav.expanded .hamburger span:nth-child(2) {
+            opacity: 0;
+            transform: scaleX(0);
+        }
+
+        .sidenav.expanded .hamburger span:nth-child(3) {
+            transform: translateY(-9px) rotate(-45deg);
+        }
+
+        .nav-links {
+            list-style: none;
+            padding: 2rem 0;
+        }
+
+        .nav-links li {
+            margin: 0;
+        }
+
+        .nav-links a {
+            display: flex;
+            align-items: center;
+            color: #e0e0e0;
+            text-decoration: none;
+            transition: background 0.3s, color 0.3s;
+            position: relative;
+            padding: 1rem;
+            gap: 1rem;
+        }
+
+        .nav-links a:hover {
+            background: rgba(0, 200, 255, 0.1);
+            color: #00c8ff;
+        }
+
+        .nav-links a.active {
+            background: rgba(0, 200, 255, 0.2);
+            color: #00c8ff;
+            border-left: 3px solid #00c8ff;
+        }
+
+        .nav-icon {
+            font-size: 1.5rem;
+            min-width: 24px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .sidenav:not(.expanded) .nav-links a {
+            justify-content: center;
+        }
+
+        .sidenav.expanded .nav-links a {
+            justify-content: flex-start;
+            padding-left: 1.5rem;
+        }
+
+        .nav-icon svg {
+            display: block;
+            stroke: #e0e0e0;
+            transition: stroke 0.3s;
+        }
+
+        .nav-links a:hover .nav-icon svg {
+            stroke: #00c8ff;
+        }
+
+        .nav-links a.active .nav-icon svg {
+            stroke: #00c8ff;
+        }
+
+        .nav-text {
+            white-space: nowrap;
+            transition: opacity 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+            opacity: 0;
+            will-change: opacity;
+        }
+
+        .sidenav.expanded .nav-text {
+            opacity: 1;
+        }
+
+        .nav-links a {
+            display: flex;
+            align-items: center;
+            color: #e0e0e0;
+            text-decoration: none;
+            transition: background 0.3s, color 0.3s;
+            position: relative;
+            padding: 1rem;
+            min-height: 56px;
+        }
+
+        .nav-icon {
+            font-size: 1.5rem;
+            width: 24px;
+            text-align: center;
+            flex-shrink: 0;
+            position: absolute;
+            left: 40px;
+            transform: translateX(-12px);
+        }
+
+        .nav-text {
+            white-space: nowrap;
+            transition: opacity 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+            opacity: 0;
+            will-change: opacity;
+            padding-left: 52px;
+        }
+
+        .sidenav.expanded .nav-text {
+            opacity: 1;
+        }
+
+        .main-content {
+            margin-left: 80px;
+            transition: margin-left 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+            position: relative;
+            z-index: 2;
+            will-change: margin-left;
+        }
+
+        .main-content.collapsed {
+            margin-left: 250px;
+        }
+
+        .welcome-section {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 0 5%;
+        }
+
+        h1 {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #00c8ff, #0080ff, #00ffaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            color: #a0a0a0;
+            margin-bottom: 3rem;
+            animation: fadeInUp 1s ease-out 0.3s backwards;
+        }
+
+        .cta-button {
+            padding: 1rem 3rem;
+            font-size: 1.1rem;
+            background: linear-gradient(135deg, #00c8ff, #0080ff);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            animation: fadeInUp 1s ease-out 0.6s backwards;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0, 200, 255, 0.4);
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 3rem;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2s infinite;
+        }
+
+        .scroll-indicator::before {
+            content: '↓';
+            font-size: 2rem;
+            color: #00c8ff;
+        }
+
+        .page-content {
+            display: none;
+            position: relative;
+            z-index: 5;
+        }
+
+        .page-content.active {
+            display: block;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateX(-50%) translateY(0);
+            }
+            50% {
+                transform: translateX(-50%) translateY(-10px);
+            }
+        }
+
+        .comment-item {
+            background: rgba(20, 20, 30, 0.8);
+            border: 1px solid rgba(0, 200, 255, 0.2);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .comment-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .comment-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00c8ff, #0080ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .comment-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .comment-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .comment-actions button {
+            background: none;
+            border: 1px solid rgba(0, 200, 255, 0.3);
+            color: #00c8ff;
+            padding: 0.4rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .comment-actions button:hover {
+            background: rgba(0, 200, 255, 0.1);
+        }
+
+        .comment-actions button.active {
+            background: rgba(0, 200, 255, 0.2);
+            border-color: #00c8ff;
+        }
+
+        .comment-actions button.dislike {
+            border-color: rgba(255, 100, 100, 0.3);
+            color: #ff6b6b;
+        }
+
+        .comment-actions button.dislike:hover {
+            background: rgba(255, 100, 100, 0.1);
+        }
+
+        .comment-actions button.dislike.active {
+            background: rgba(255, 100, 100, 0.2);
+            border-color: #ff6b6b;
+        }
+
+        .reply-section {
+            margin-left: 3rem;
+            margin-top: 1rem;
+            padding-left: 1rem;
+            border-left: 2px solid rgba(0, 200, 255, 0.2);
+        }
+
+        .reply-input {
+            display: none;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(0, 200, 255, 0.1);
+        }
+
+        .reply-input.active {
+            display: block;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        #disclaimerModal {
+            z-index: 3000;
+        }
+
+        #disclaimerModal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: rgba(20, 20, 30, 0.95);
+            border: 1px solid rgba(0, 200, 255, 0.3);
+            border-radius: 20px;
+            padding: 3rem;
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+        }
+
+        .user-menu {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-avatar-small {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #00c8ff;
+        }
+
+        .sign-in-btn {
+            background: linear-gradient(135deg, #00c8ff, #0080ff);
+            border: none;
+            color: white;
+            padding: 0.6rem 1.5rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .sign-in-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 200, 255, 0.4);
+        }
+
+        .sign-in-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 2001;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sign-in-overlay.active {
+            display: flex;
+        }
+
+        .sign-in-modal {
+            background: rgba(20, 20, 30, 0.95);
+            border: 1px solid rgba(0, 200, 255, 0.3);
+            border-radius: 20px;
+            padding: 2.5rem;
+            max-width: 400px;
+            width: 90%;
+            position: relative;
+        }
+
+        .sign-in-option {
+            width: 100%;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: rgba(0, 200, 255, 0.1);
+            border: 1px solid rgba(0, 200, 255, 0.3);
+            border-radius: 10px;
+            color: #e0e0e0;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .sign-in-option:hover {
+            background: rgba(0, 200, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        #modOptionsBtn:hover {
+            background: rgba(0, 200, 255, 0.1);
+            border-radius: 50%;
+        }
+
+        #modOptionsMenu button:hover {
+            background: rgba(0, 200, 255, 0.1);
+        }
+
+        #legal > div > div {
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        #legal > div > div:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 200, 255, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .subtitle {
+                font-size: 1.2rem;
+            }
+
+            .sidenav {
+                width: 80px;
+            }
+
+            .sidenav .logo,
+            .sidenav .nav-text {
+                display: none;
+            }
+
+            .main-content {
+                margin-left: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+<canvas id="canvas-bg"></canvas>
+
+<div class="user-menu" id="signInButton" style="display: none;">
+    <button class="sign-in-btn" onclick="openSignInOverlay()">Sign In</button>
+</div>
+
+<div class="user-menu" id="userMenu" style="display: none;">
+    <span id="userName" style="color: #00c8ff; cursor: pointer;" onclick="openProfileModal()"></span>
+    <img id="userAvatar" class="user-avatar-small" alt="User" onclick="openProfileModal()" style="cursor: pointer;">
+    <button onclick="signOut()" style="background: rgba(255, 100, 100, 0.2); border: 1px solid #ff6b6b; color: #ff6b6b; padding: 0.5rem 1rem; border-radius: 20px; cursor: pointer;">Sign Out</button>
+</div>
+
+<div class="sign-in-overlay" id="signInOverlay">
+    <div class="sign-in-modal">
+        <button onclick="closeSignInOverlay()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: 2px solid #00c8ff; color: #00c8ff; font-size: 1.5rem; width: 40px; height: 40px; border-radius: 50%; cursor: pointer;">X</button>
+
+        <h2 style="color: #00c8ff; font-size: 2rem; margin-bottom: 2rem; text-align: center;">Sign In</h2>
+
+        <button onclick="signInWithEmail()" class="sign-in-option">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+            Sign in via Email
+        </button>
+
+        <button onclick="signInWithPhone()" class="sign-in-option">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+            </svg>
+            Sign in via Phone
+        </button>
+
+        <button onclick="signInWithGoogle()" class="sign-in-option">
+            <svg width="20" height="20" viewBox="0 0 18 18" fill="currentColor">
+                <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
+                <path d="M9.003 18c2.43 0 4.467-.806 5.956-2.18L12.05 13.56c-.806.54-1.836.86-3.047.86-2.344 0-4.328-1.584-5.036-3.711H.96v2.332C2.44 15.983 5.485 18 9.003 18z"/>
+                <path d="M3.964 10.712c-.18-.54-.282-1.117-.282-1.71 0-.593.102-1.17.282-1.71V4.96H.957C.347 6.175 0 7.55 0 9.002c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
+                <path d="M9.003 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.464.891 11.428 0 9.003 0 5.485 0 2.44 2.017.96 4.958L3.967 7.29c.708-2.127 2.692-3.71 5.036-3.71z"/>
+            </svg>
+            Sign in via Google
+        </button>
+    </div>
+</div>
+
+<div class="modal" id="disclaimerModal">
+    <div class="modal-content">
+        <h2 style="color: #00c8ff; font-size: 2rem; margin-bottom: 2rem; text-align: center;">Disclaimer</h2>
+
+        <div style="background: rgba(0, 200, 255, 0.1); border: 1px solid rgba(0, 200, 255, 0.3); border-radius: 10px; padding: 1.5rem; margin-bottom: 1.5rem;">
+            <p style="color: #e0e0e0; line-height: 1.6; font-size: 1rem; margin-bottom: 1rem;">By using this website, you agree that you have or will read and understand the Terms of Service available in the "Legal" tab. Use of this website assumes these rules have been or are being read. All modifications are notified via this message (check last updated date below)</p>
+            <p style="color: #b0b0b0; line-height: 1.6; font-size: 0.95rem;">
+                Last Updated: November 10, 2025
+            </p>
+        </div>
+
+        <label style="display: flex; align-items: center; gap: 1rem; cursor: pointer; margin-bottom: 2rem; padding: 1rem; background: rgba(20, 20, 30, 0.5); border-radius: 10px; border: 1px solid rgba(0, 200, 255, 0.2);">
+            <input type="checkbox" id="disclaimerCheckbox" style="width: 20px; height: 20px; cursor: pointer; accent-color: #00c8ff;">
+            <span style="color: #e0e0e0; font-size: 1rem;">I have read (or will read) and agree to the terms outlined in the Legal section</span>
+        </label>
+
+        <button id="acceptDisclaimerBtn" onclick="acceptDisclaimer()" class="cta-button" style="width: 100%; font-size: 1rem; padding: 0.8rem; opacity: 0.5; cursor: not-allowed;" disabled>
+            Continue
+        </button>
+    </div>
+</div>
+
+<div class="modal" id="profileModal">
+    <div class="modal-content">
+        <button onclick="closeProfileModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: 2px solid #00c8ff; color: #00c8ff; font-size: 1.5rem; width: 40px; height: 40px; border-radius: 50%; cursor: pointer;">✕</button>
+
+        <h2 style="color: #00c8ff; font-size: 2rem; margin-bottom: 2rem;">Profile</h2>
+
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <img id="modalAvatar" style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid #00c8ff; margin-bottom: 1rem; object-fit: cover;">
+            <div>
+                <input type="file" id="avatarInput" accept="image/*,.gif" style="display: none;" onchange="uploadAvatar()">
+                <button onclick="document.getElementById('avatarInput').click()" class="cta-button" style="font-size: 0.9rem; padding: 0.5rem 1.5rem;">
+                    Change Profile Picture
+                </button>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="color: #00c8ff; display: block; margin-bottom: 0.5rem;">Username</label>
+            <input type="text" id="usernameInput" style="width: 100%; background: rgba(10, 10, 20, 0.8); border: 1px solid rgba(0, 200, 255, 0.2); border-radius: 10px; padding: 0.8rem; color: #e0e0e0; font-size: 1rem;">
+            <p id="usernameError" style="color: #ff6b6b; font-size: 0.85rem; margin-top: 0.5rem; display: none;"></p>
+        </div>
+
+        <button onclick="saveProfile()" class="cta-button" style="width: 100%; font-size: 1rem; padding: 0.8rem;">
+            Save Profile
+        </button>
+    </div>
+</div>
+
+<nav class="sidenav" id="sidenav">
+    <div class="nav-header">
+        <div class="logo">Numptey</div>
+        <button class="toggle-btn" id="toggleBtn">
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </button>
+    </div>
+    <ul class="nav-links">
+        <li>
+            <a href="#home" class="nav-item active" data-page="home">
+                    <span class="nav-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                        </svg>
+                    </span>
+                <span class="nav-text">Home</span>
+            </a>
+        </li>
+        <li>
+            <a href="#news" class="nav-item" data-page="news">
+                    <span class="nav-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2">
+                            <rect x="4" y="4" width="16" height="16" rx="2"/>
+                            <line x1="8" y1="9" x2="16" y2="9"/>
+                            <line x1="8" y1="13" x2="16" y2="13"/>
+                            <line x1="8" y1="17" x2="13" y2="17"/>
+                        </svg>
+                    </span>
+                <span class="nav-text">News</span>
+            </a>
+        </li>
+        <li>
+            <a href="#minecraft" class="nav-item" data-page="minecraft">
+                    <span class="nav-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2">
+                            <path d="M12 4 L20 8 L12 12 L4 8 Z"/>
+                            <line x1="4" y1="8" x2="12" y2="12" stroke-width="1.5"/>
+                            <line x1="20" y1="8" x2="12" y2="12" stroke-width="1.5"/>
+                            <path d="M4 8 L4 16 L12 20 L12 12 Z"/>
+                            <path d="M20 8 L20 16 L12 20 L12 12 Z"/>
+                        </svg>
+                    </span>
+                <span class="nav-text">Minecraft</span>
+            </a>
+        </li>
+        <li>
+            <a href="#legal" class="nav-item" data-page="legal">
+                    <span class="nav-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="9" y1="13" x2="15" y2="13"/>
+                            <line x1="9" y1="17" x2="13" y2="17"/>
+                            <circle cx="17" cy="17" r="3"/>
+                            <line x1="19.5" y1="19.5" x2="22" y2="22"/>
+                        </svg>
+                    </span>
+                <span class="nav-text">Legal</span>
+            </a>
+        </li>
+    </ul>
+</nav>
+
+<div id="recaptcha-container"></div>
+
+<div class="main-content" id="mainContent">
+    <section id="home" class="welcome-section page-content active">
+        <h1>Numptey</h1>
+        <p class="subtitle">Where quality far exceeds quantity</p>
+        <button class="cta-button" id="exploreBtn">Discover Innovation</button>
+        <div class="scroll-indicator"></div>
+    </section>
+
+    <section id="news" class="page-content" style="min-height: 100vh; padding: 8rem 5%;">
+        <div style="max-width: 1200px; margin: 0 auto; position: relative; z-index: 10;">
+            <h1 style="font-size: 3rem; margin-bottom: 3rem;">News</h1>
+
+            <div style="display: grid; gap: 2rem;">
+                <div class="news-card" data-news-id="website-launch" style="background: rgba(20, 20, 30, 0.8); border: 1px solid rgba(0, 200, 255, 0.3); border-radius: 15px; padding: 2rem; cursor: pointer; transition: all 0.3s;">
+                    <div style="color: #808080; font-size: 0.9rem; margin-bottom: 0.5rem;">November 10, 2025</div>
+                    <h2 style="color: #00c8ff; font-size: 1.8rem; margin-bottom: 1rem;">Numptey.com</h2>
+                    <p style="color: #b0b0b0; line-height: 1.6; font-size: 1.1rem;">Today "Numptey.com" has been released publicly and uh if your seeing this you probably already knew.</p>
+                    <p style="color: #b0b0b0; line-height: 1.6; font-size: 1.1rem;">You can expect Minecraft mods, and the occasional game or two!</p>
+                    <p style="color: #00c8ff; font-size: 0.9rem; margin-top: 1rem;">Click to read more →</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="newsDetail" class="page-content" style="min-height: 100vh; padding: 8rem 5%;">
+        <div style="max-width: 1200px; margin: 0 auto; position: relative; z-index: 10;">
+            <button id="backToNews" style="background: none; border: 2px solid #00c8ff; color: #00c8ff; padding: 0.8rem 2rem; border-radius: 30px; cursor: pointer; font-size: 1rem; margin-bottom: 2rem; transition: all 0.3s;">
+                ← Back to News
+            </button>
+
+            <div style="background: rgba(20, 20, 30, 0.95); border: 1px solid rgba(0, 200, 255, 0.3); border-radius: 20px; padding: 3rem; margin-bottom: 3rem;">
+                <div style="color: #808080; font-size: 0.9rem; margin-bottom: 0.5rem;" id="newsDetailDate">November 10, 2025</div>
+                <h1 style="color: #00c8ff; font-size: 3rem; margin-bottom: 2rem;" id="newsDetailTitle">Numptey.com</h1>
+                <div style="color: #e0e0e0; line-height: 1.8; font-size: 1.1rem;" id="newsDetailContent">
+                    <p style="color: #b0b0b0; line-height: 1.6; font-size: 1.1rem;">Today "Numptey.com" has been released publicly and uh if your seeing this you probably already knew.</p>
+                    <p style="color: #b0b0b0; line-height: 1.6; font-size: 1.1rem;">You can expect Minecraft mods, and the occasional game or two!</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 3rem;">
+                <h2 style="color: #00c8ff; font-size: 2rem; margin-bottom: 2rem;">Comments</h2>
+
+                <div id="newsDetailCommentsAuth" style="background: rgba(20, 20, 30, 0.8); border: 1px solid rgba(0, 200, 255, 0.3); border-radius: 15px; padding: 3rem; text-align: center;">
+                    <p style="color: #b0b0b0; font-size: 1.1rem; margin-bottom: 2rem;">Sign in to leave a comment</p>
+
+                    <button onclick="signInWithEmail()" class="cta-button" style="font-size: 1rem; padding: 0.8rem 2rem; margin-bottom: 1rem; width: 100%;">
+                            <span style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                    <polyline points="22,6 12,13 2,6"></polyline>
+                                </svg>
+                                Sign in via Email
+                            </span>
+                    </button>
+
+                    <button onclick="signInWithPhone()" class="cta-button" style="font-size: 1rem; padding: 0.8rem 2rem; margin-bottom: 1rem; width: 100%;">
+                            <span style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                                </svg>
+                                Sign in via Phone
+                            </span>
+                    </button>
+
+                    <button onclick="signInWithGoogle()" class="cta-button" style="font-size: 1rem; padding: 0.8rem 2rem; width: 100%;">
+                            <span style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                                <svg width="18" height="18" viewBox="0 0 18 18" fill="white">
+                                    <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
+                                    <path d="M9.003 18c2.43 0 4.467-.806 5.956-2.18L12.05 13.56c-.806.54-1.836.86-3.047.86-2.344 0-4.328-1.584-5.036-3.711H.96v2.332C2.44 15.983 5.485 18 9.003 18z"/>
+                                    <path d="M3.964 10.712c-.18-.54-.282-1.117-.282-1.71 0-.593.102-1.17.282-1.71V4.96H.957C.347 6.175 0 7.55 0 9.002c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
+                                    <path d="M9.003 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.464.891 11.428 0 9.003 0 5.485 0 2.44 2.017.96 4.958L3.967 7.29c.708-2.127 2.692-3.71 5.036-3.71z"/>
+                                </svg>
+                                Sign in via Google
+                            </span>
+                    </button>
+                </div>
+
+                <div id="newsDetailCommentsSection" style="display: none;">
+                    <div style="background: rgba(20, 20, 30, 0.8); border: 1px solid rgba(0, 200, 255, 0.3); border-radius: 15px; padding: 2rem; margin-bottom: 2rem;">
+                        <textarea id="newsDetailCommentInput" placeholder="Write a comment..." style="width: 100%; min-height: 100px; background: rgba(10, 10, 20, 0.8); border: 1px solid rgba(0, 200, 255, 0.2); border-radius: 10px; padding: 1rem; color: #e0e0e0; font-size: 1rem; font-family: inherit; resize: vertical;"></textarea>
+                        <button onclick="postComment('newsDetail')" class="cta-button" style="margin-top: 1rem; font-size: 0.9rem; padding: 0.6rem 1.5rem;">Publish Comment</button>
+                    </div>
+                    <div id="newsDetailCommentsList"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="minecraft" class="page-content" style="min-height: 100vh; padding: 8rem 5%;">
+        <div style="max-width: 1200px; margin: 0 auto; position: relative; z-index: 10;">
+            <h1 style="font-size: 3rem; margin-bottom: 3rem;">Minecraft Mods</h1>
+
+            <div id="modCard" style="background: rgba(20, 20, 30, 0.8); border: 1px solid rgba(0, 200, 255, 0.3); border-radius: 15px; padding: 2rem; cursor: pointer; transition: all 0.3s; max-width: 600px;">
+                <h2 style="color: #00c8ff; font-size: 2rem; margin-bottom: 1rem;">Sinisterity</h2>
+                <p style="color: #b0b0b0; line-height: 1.6; font-size: 1.1rem; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">A mod created to break the cycle of mod's containing re-textured zombies with creepy sounds that this game has been getting for the past few years.</p>
+                <p style="color: #00c8ff; font-size: 0.9rem; margin-top: 1rem;">Click to read more →</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="modDetail" class="page-content" style="min-height: 100vh; padding: 8rem 5%;">
+        <div style="max-width: 1200px; margin: 0 auto; position: relative; z-index: 10;">
+            <button id="backButton" style="background: none; border: 2px solid #00c8ff; color: #00c8ff; padding: 0.8rem 2rem; border-radius: 30px; cursor: pointer; font-size: 1rem; margin-bottom: 2rem; transition: all 0.3s;">
+                ← Back to Mods
+            </button>
+
+            <div style="background: rgba(20, 20, 30, 0.95); border: 1px solid rgba(0, 200, 255, 0.3); border-radius: 20px; padding: 3rem; position: relative;">
+                <button id="modOptionsBtn" style="position: absolute; top: 1.5rem; right: 1.5rem; background: none; border: none; color: #00c8ff; font-size: 1.5rem; cursor: pointer; padding: 0.5rem; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; transition: all 0.3s;">
+                    ⋮
+                </button>
+
+                <div id="modOptionsMenu" style="display: none; position: absolute; top: 4rem; right: 1.5rem; background: rgba(20, 20, 30, 0.98); border: 1px solid rgba(0, 200, 255, 0.3); border-radius: 10px; padding: 0.5rem; min-width: 150px; z-index: 100; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);">
+                    <button onclick="showModDetails()" style="width: 100%; background: none; border: none; color: #e0e0e0; padding: 0.8rem 1rem; text-align: left; cursor: pointer; border-radius: 5px; font-size: 1rem; transition: all 0.3s; display: flex; align-items: center; gap: 0.5rem;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                        Details
+                    </button>
+                    <div style="height: 1px; background: rgba(0, 200, 255, 0.2); margin: 0.5rem 0;"></div>
+                    <button onclick="showSourceCode()" style="width: 100%; background: none; border: none; color: #e0e0e0; padding: 0.8rem 1rem; text-align: left; cursor: pointer; border-radius: 5px; font-size: 1rem; transition: all 0.3s; display: flex; align-items: center; gap: 0.5rem;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="16 18 22 12 16 6"></polyline>
+                            <polyline points="8 6 2 12 8 18"></polyline>
+                        </svg>
+                        Source Code
+                    </button>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 200px 1fr; gap: 3rem; margin-bottom: 3rem;">
+                    <div>
+                        <div style="width: 200px; height: 200px; border-radius: 15px; border: 2px solid rgba(0, 200, 255, 0.3); overflow: hidden;">
+                            <img src="../assets/minecraft/Sinisterity_Icon.png" alt="Sinisterity" style="width: 100%; height: 100%; object-fit: cover; object-position: center;" onerror="this.style.background='linear-gradient(135deg, rgba(0, 200, 255, 0.3), rgba(0, 128, 255, 0.3))'; this.src=''; this.alt='Mod Icon';">
+                        </div>
+                    </div>
+                    <div>
+                        <h2 style="color: #00c8ff; font-size: 2.5rem; margin-bottom: 1rem;">Sinisterity</h2>
+                        <div style="background: rgba(255, 200, 0, 0.1); border: 1px solid rgba(255, 200, 0, 0.5); border-radius: 10px; padding: 1.5rem; margin-bottom: 1.5rem;">
+                            <div style="color: #ffc800; font-size: 1rem; margin-bottom: 0.5rem;">Releases In:</div>
+                            <div id="countdown" style="color: #00c8ff; font-size: 2rem; font-weight: bold;">Loading...</div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div style="background: rgba(0, 200, 255, 0.1); padding: 1rem; border-radius: 10px;">
+                                <div style="color: #808080; font-size: 0.9rem;">Downloads</div>
+                                <div style="color: #00c8ff; font-size: 1.8rem; font-weight: bold;">0</div>
+                            </div>
+                            <div style="background: rgba(0, 200, 255, 0.1); padding: 1rem; border-radius: 10px;">
+                                <div style="color: #808080; font-size: 0.9rem;">Version</div>
+                                <div style="color: #00c8ff; font-size: 1.8rem; font-weight: bold;">None</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: #00c8ff; font-size: 1.8rem; margin-bottom: 1rem;">Description</h3>
+                    <p style="color: #b0b0b0; line-height: 1.6; font-size: 1.1rem; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">A mod created to break the trend of horror mods that contain re-textured zombies with creepy sounds that this game has been getting for the past few years.</p>
+                </div>
+
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: #00c8ff; font-size: 1.8rem; margin-bottom: 1rem;">Features</h3>
+                    <ul style="color: #b0b0b0; line-height: 1.8; font-size: 1.1rem; margin-left: 2rem;">
+                        <li>Mobs use ChatGPT to "think" in real time</li>
+                        <li>Uses the player's name on their Computer</li>
+                        <li>Uses the player's IP address</li>
+                        <li>Takes screenshots</li>
+                        <li>Creates files on the player's computer (.txt, and .bat)</li>
+                        <li>Malware/Virus visuals drawn directly on the player's desktop</li>
+                        <li>Faux Blue Screen of Death</li>
+                        <li>Forcefully powers off the player's computer</li>
+                    </ul>
+                </div>
+
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: #00c8ff; font-size: 1.8rem; margin-bottom: 1rem;">Versions</h3>
+                    <div style="background: rgba(0, 200, 255, 0.05); border: 1px solid rgba(0, 200, 255, 0.2); border-radius: 10px; padding: 1.5rem;">
+                        <button id="versionsToggle" style="width: 100%; background: rgba(0, 200, 255, 0.1); border: 1px solid rgba(0, 200, 255, 0.3); color: #00c8ff; padding: 1rem; border-radius: 8px; cursor: pointer; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center;">
+                            <span>View Versions</span>
+                            <span id="versionsArrow">▼</span>
+                        </button>
+
+                        <div id="versionsContent" style="display: none; margin-top: 1rem;">
+                            <div style="margin-bottom: 1rem;">
+                                <button id="fabricToggle" style="width: 100%; background: rgba(0, 200, 255, 0.05); border: 1px solid rgba(0, 200, 255, 0.2); color: #00c8ff; padding: 0.8rem; border-radius: 8px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; gap: 0.8rem;">
+                                    <img src="../assets/minecraft/Fabric_Icon.png" alt="Fabric" style="width: 24px; height: 24px; object-fit: contain;" onerror="this.style.display='none';">
+                                    <span style="flex: 1; text-align: left;">Fabric</span>
+                                    <span id="fabricArrow">▼</span>
+                                </button>
+                                <div id="fabricContent" style="display: none; margin-top: 0.5rem; padding: 1rem; background: rgba(0, 200, 255, 0.02); border: 1px solid rgba(0, 200, 255, 0.1); border-radius: 8px;">
+                                    <div style="color: #808080; text-align: center; padding: 1rem; font-size: 0.95rem;">
+                                        No Fabric versions available yet.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 1rem;">
+                                <button id="forgeToggle" style="width: 100%; background: rgba(0, 200, 255, 0.05); border: 1px solid rgba(0, 200, 255, 0.2); color: #00c8ff; padding: 0.8rem; border-radius: 8px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; gap: 0.8rem;">
+                                    <img src="../assets/minecraft/Forge_Icon.png" alt="Forge" style="width: 24px; height: 24px; object-fit: contain;" onerror="this.style.display='none';">
+                                    <span style="flex: 1; text-align: left;">Forge</span>
+                                    <span id="forgeArrow">▼</span>
+                                </button>
+                                <div id="forgeContent" style="display: none; margin-top: 0.5rem; padding: 1rem; background: rgba(0, 200, 255, 0.02); border: 1px solid rgba(0, 200, 255, 0.1); border-radius: 8px;">
+                                    <div style="color: #808080; text-align: center; padding: 1rem; font-size: 0.95rem;">
+                                        No Forge versions available yet.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 0;">
+                                <button id="neoforgeToggle" style="width: 100%; background: rgba(0, 200, 255, 0.05); border: 1px solid rgba(0, 200, 255, 0.2); color: #00c8ff; padding: 0.8rem; border-radius: 8px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; gap: 0.8rem;">
+                                    <img src="../assets/minecraft/NeoForge_Icon.png" alt="NeoForge" style="width: 24px; height: 24px; object-fit: contain;" onerror="this.style.display='none';">
+                                    <span style="flex: 1; text-align: left;">NeoForge</span>
+                                    <span id="neoforgeArrow">▼</span>
+                                </button>
+                                <div id="neoforgeContent" style="display: none; margin-top: 0.5rem; padding: 1rem; background: rgba(0, 200, 255, 0.02); border: 1px solid rgba(0, 200, 255, 0.1); border-radius: 8px;">
+                                    <div style="color: #808080; text-align: center; padding: 1rem; font-size: 0.95rem;">
+                                        No NeoForge versions available yet.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 3rem;">
+                <h2 style="color: #00c8ff; font-size: 2rem; margin-bottom: 2rem;">Comments</h2>
+
+                <div id="modCommentsAuth" style="background: rgba(20, 20, 30, 0.8); border: 1px solid rgba(0, 200, 255, 0.3); border-radius: 15px; padding: 3rem; text-align: center;">
+                    <p style="color: #b0b0b0; font-size: 1.1rem; margin-bottom: 2rem;">Sign in to leave a comment</p>
+
+                    <button onclick="signInWithEmail()" class="cta-button" style="font-size: 1rem; padding: 0.8rem 2rem; margin-bottom: 1rem; width: 100%;">
+                            <span style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                    <polyline points="22,6 12,13 2,6"></polyline>
+                                </svg>
+                                Sign in via Email
+                            </span>
+                    </button>
+
+                    <button onclick="signInWithPhone()" class="cta-button" style="font-size: 1rem; padding: 0.8rem 2rem; margin-bottom: 1rem; width: 100%;">
+                            <span style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                                </svg>
+                                Sign in via Phone
+                            </span>
+                    </button>
+
+                    <button onclick="signInWithGoogle()" class="cta-button" style="font-size: 1rem; padding: 0.8rem 2rem; width: 100%;">
+                            <span style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                                <svg width="18" height="18" viewBox="0 0 18 18" fill="white">
+                                    <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
+                                    <path d="M9.003 18c2.43 0 4.467-.806 5.956-2.18L12.05 13.56c-.806.54-1.836.86-3.047.86-2.344 0-4.328-1.584-5.036-3.711H.96v2.332C2.44 15.983 5.485 18 9.003 18z"/>
+                                    <path d="M3.964 10.712c-.18-.54-.282-1.117-.282-1.71 0-.593.102-1.17.282-1.71V4.96H.957C.347 6.175 0 7.55 0 9.002c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
+                                    <path d="M9.003 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.464.891 11.428 0 9.003 0 5.485 0 2.44 2.017.96 4.958L3.967 7.29c.708-2.127 2.692-3.71 5.036-3.71z"/>
+                                </svg>
+                                Sign in via Google
+                            </span>
+                    </button>
+                </div>
+
+                <div id="modCommentsSection" style="display: none;">
+                    <div style="background: rgba(20, 20, 30, 0.8); border: 1px solid rgba(0, 200, 255, 0.3); border-radius: 15px; padding: 2rem; margin-bottom: 2rem;">
+                        <textarea id="modCommentInput" placeholder="Write a comment..." style="width: 100%; min-height: 100px; background: rgba(10, 10, 20, 0.8); border: 1px solid rgba(0, 200, 255, 0.2); border-radius: 10px; padding: 1rem; color: #e0e0e0; font-size: 1rem; font-family: inherit; resize: vertical;"></textarea>
+                        <button onclick="postComment('mod')" class="cta-button" style="margin-top: 1rem; font-size: 0.9rem; padding: 0.6rem 1.5rem;">Publish Comment</button>
+                    </div>
+                    <div id="modCommentsList"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="modDetailsPage" class="page-content" style="min-height: 100vh; padding: 8rem 5%;">
+        <div style="max-width: 1200px; margin: 0 auto; position: relative; z-index: 10;">
+            <button onclick="closeModDetailsPage()" style="background: none; border: 2px solid #00c8ff; color: #00c8ff; padding: 0.8rem 2rem; border-radius: 30px; cursor: pointer; font-size: 1rem; margin-bottom: 2rem; transition: all 0.3s;">
+                ← Back to Mod
+            </button>
+
+            <div style="background: rgba(20, 20, 30, 0.95); border: 1px solid rgba(0, 200, 255, 0.3); border-radius: 20px; padding: 3rem;">
+                <h1 style="color: #00c8ff; font-size: 3rem; margin-bottom: 2rem;">Details</h1>
+
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: #00c8ff; font-size: 1.8rem; margin-bottom: 1rem;">How Does It Work?</h3>
+                    <p style="color: #0; font-size: 1.5rem; line-height: 1.8; margin-bottom: 0.7rem;">How do the mobs "think" in real time?</p>
+                    <p style="color: #b0b0b0; font-size: 1.5rem; margin-bottom: 0.5rem;">Certain environmental factors are taken and sent to GPT 4o Mini using OpenAI's API Platform. ChatGPT uses the information provided to make it's decision. Once the decision is made it gets sent back to the mod, and it's acted out. This is also how the "Chat Monster" works minus the environmental factors being taken in</p>
+                    <p style="color: #0; font-size: 1.5rem; line-height: 1.8; margin-bottom: 0.7rem;">How does the mod's shader work?</p>
+                    <p style="color: #b0b0b0; font-size: 1.5rem; margin-bottom: 0.5rem;">When the sun reaches a certain position in the sky a custom fog effect is applied to everything. The fog effect works by absorbing light. When the night is beginning it starts with a low absorption percentage but gradually increases as the night goes on until pitch darkness (100% absorption). Light sources in the darkness lessen the nearby fogs absorption, but the further you are from a light source the less it effects absorption</p>
+                    <p style="color: #0; font-size: 1.5rem; line-height: 1.8; margin-bottom: 0.7rem;">How does the mod use real life info such as the player's IP Address?</p>
+                    <p style="color: #b0b0b0; font-size: 1.5rem; margin-bottom: 0.5rem;">The mod uses the website "https://api.ipify.org" to geolocate the player</p>
+                    <p style="color: #0; font-size: 1.5rem; line-height: 1.8; margin-bottom: 0.7rem;">How does the mod work outside the game?</p>
+                    <p style="color: #b0b0b0; font-size: 1.5rem; margin-bottom: 0.5rem;">The mod uses a well known program called AHK (Auto Hot Key) which does the minimization process, and fake errors as well as chaining everything together (the first AHK script is executed via Java then right before that script ends it executes the next script and this sequence repeats itself until the process is over</p>
+                    <p style="color: #0; font-size: 1.5rem; line-height: 1.8; margin-bottom: 0.7rem;">How do the virus visuals work?</p>
+                    <p style="color: #b0b0b0; font-size: 1.5rem; margin-bottom: 0.5rem;">A python executable is executed by an AHK script then it just plays out the executable's code</p>
+                    <p style="color: #0; font-size: 1.5rem; line-height: 1.8; margin-bottom: 0.7rem;">How does the mod turn off the player's computer?</p>
+                    <p style="color: #b0b0b0; font-size: 1.5rem; margin-bottom: 0.5rem;">"Shutdown 13". That code is all it takes to turn off the player's computer</p>
+                </div>
+
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: #00c8ff; font-size: 1.8rem; margin-bottom: 1rem;">Dependencies</h3>
+                    <ul style="color: #b0b0b0; line-height: 1.8; font-size: 1rem;">
+                        <li>Internet connection</li>
+                        <li>Windows 11 (Windows 10 and Windows 11 Pro should work too)</li>
+                        <li>Minecraft Java Edition</li>
+                        <li>Fabric Loader</li>
+                        <li>Iris</li>
+                        <li>Uniforms</li>
+                    </ul>
+                </div>
+
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: #00c8ff; font-size: 1.8rem; margin-bottom: 1rem;">Credit</h3>
+                    <p style="color: #b0b0b0; line-height: 1.8; font-size: 1rem;">Music: Populist47</p>
+                    <p style="color: #b0b0b0; line-height: 1.8; font-size: 1rem;">Music: Vivivivivi</p>
+                    <p style="color: #b0b0b0; line-height: 1.8; font-size: 1rem;">Monologues: The Inquisitor</p>
+                    <p style="color: #b0b0b0; line-height: 1.8; font-size: 1rem;">For more descriptive credits type "/credits" in game</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="sourceCodePage" class="page-content" style="min-height: 100vh; padding: 8rem 5%;">
+        <div style="max-width: 1200px; margin: 0 auto; position: relative; z-index: 10;">
+            <button onclick="closeSourceCodePage()" style="background: none; border: 2px solid #00c8ff; color: #00c8ff; padding: 0.8rem 2rem; border-radius: 30px; cursor: pointer; font-size: 1rem; margin-bottom: 2rem; transition: all 0.3s;">
+                ← Back to Mod
+            </button>
+
+            <div style="background: rgba(20, 20, 30, 0.95); border: 1px solid rgba(0, 200, 255, 0.3); border-radius: 20px; padding: 3rem; text-align: center;">
+                <h1 style="color: #00c8ff; font-size: 3rem; margin-bottom: 2rem;">Source Code</h1>
+                <p style="color: #b0b0b0; line-height: 1.8; font-size: 1.3rem;">
+                    This mod is currently closed source.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section id="legal" class="page-content" style="min-height: 100vh; padding: 8rem 5%;">
+        <div style="max-width: 1200px; margin: 0 auto; position: relative; z-index: 10;">
+            <h1 style="font-size: 3rem; margin-bottom: 3rem;">Legal</h1>
+
+            <div onclick="openTermsOfService()" style="background: rgba(20, 20, 30, 0.8); border: 1px solid rgba(0, 200, 255, 0.3); border-radius: 15px; padding: 2rem; margin-bottom: 2rem; cursor: pointer; transition: all 0.3s;">
+                <h2 style="color: #00c8ff; font-size: 2rem; margin-bottom: 1rem;">Terms of Service</h2>
+                <p style="color: #b0b0b0; line-height: 1.6; font-size: 1.1rem; margin-bottom: 1rem;">By using Numptey.com you accept and agree to be bound by the terms of this agreement. If you do not agree to these terms, then please do not use this service.</p>
+                <p style="color: #00c8ff; font-size: 0.9rem; margin-top: 1rem;">Click to read more →</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="termsOfServicePage" class="page-content" style="min-height: 100vh; padding: 8rem 5%;">
+        <div style="max-width: 1200px; margin: 0 auto; position: relative; z-index: 10;">
+            <button onclick="closeTermsOfService()" style="background: none; border: 2px solid #00c8ff; color: #00c8ff; padding: 0.8rem 2rem; border-radius: 30px; cursor: pointer; font-size: 1rem; margin-bottom: 2rem; transition: all 0.3s;">
+                ← Back to Legal
+            </button>
+
+            <div style="background: rgba(20, 20, 30, 0.95); border: 1px solid rgba(0, 200, 255, 0.3); border-radius: 20px; padding: 3rem;">
+                <h1 style="color: #00c8ff; font-size: 3rem; margin-bottom: 2rem;">Terms of Service</h1>
+
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: #00c8ff; font-size: 1.8rem; margin-bottom: 1rem;">1.</h3>
+                    <p style="color: #b0b0b0; line-height: 1.8; font-size: 1.1rem;">By accessing and using Numptey.com you accept and agree to be bound by the terms of this agreement. If you do not agree to these terms, then please do not use this service.</p>
+                    <h3 style="color: #00c8ff; font-size: 1.8rem; margin-bottom: 1rem;">2.</h3>
+                    <p style="color: #b0b0b0; line-height: 1.8; font-size: 1.1rem;">You are not permitted to redistribute any content displayed on this website.</p>
+                    <h3 style="color: #00c8ff; font-size: 1.8rem; margin-bottom: 1rem;">3.</h3>
+                    <p style="color: #b0b0b0; line-height: 1.8; font-size: 1.1rem;">No user shall publish content in which displays other user's personal information, illegal information, or harassment.</p>
+                    <h3 style="color: #00c8ff; font-size: 1.8rem; margin-bottom: 1rem;">Failure to Comply</h3>
+                    <p style="color: #b0b0b0; line-height: 1.8; font-size: 1.1rem;">If a user fails to comply with the terms stated above they may get their account suspended or even banned from the website as a whole if necessary.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut as firebaseSignOut, updateProfile, EmailAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword, RecaptchaVerifier, signInWithPhoneNumber } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, increment, serverTimestamp, deleteDoc, where, getDocs, setDoc, getDoc, arrayUnion, arrayRemove, deleteField } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+    import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#x27;',
+            '/': '&#x2F;',
+        };
+        return String(text).replace(/[&<>"'/]/g, (char) => map[char]);
+    }
+
+    function sanitizeUrl(url) {
+        if (!url) return '';
+        const urlStr = String(url).trim().toLowerCase();
+        if (urlStr.startsWith('javascript:') ||
+            urlStr.startsWith('data:') ||
+            urlStr.startsWith('vbscript:') ||
+            urlStr.startsWith('file:')) {
+            return '';
+        }
+        return url;
+    }
+
+    function validateUsername(username) {
+        if (!username || typeof username !== 'string') {
+            return null;
+        }
+        const cleaned = username.replace(/<[^>]*>/g, '');
+        const trimmed = cleaned.trim();
+        if (trimmed.length < 1 || trimmed.length > 100) {
+            return null;
+        }
+        const sanitized = trimmed.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+        return sanitized;
+    }
+
+    function validateComment(text) {
+        if (!text || typeof text !== 'string') {
+            return null;
+        }
+        const cleaned = text.replace(/<[^>]*>/g, '');
+        const trimmed = cleaned.trim();
+        if (trimmed.length < 1 || trimmed.length > 1000) {
+            return null;
+        }
+        return trimmed;
+    }
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyA_YVbmHj6g5N5-YHzX-rAFoCX8rqtfwVY",
+        authDomain: "numptey-3a0aa.firebaseapp.com",
+        projectId: "numptey-3a0aa",
+        storageBucket: "numptey-3a0aa.firebasestorage.app",
+        messagingSenderId: "356181934207",
+        appId: "1:356181934207:web:312caf1a91787fa53d3f4a"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    let currentUser = null;
+    let userLikes = {};
+    let userDislikes = {};
+    let reactionLocks = {};
+    let hasAcceptedDisclaimer = false;
+
+    onAuthStateChanged(auth, async (user) => {
+        currentUser = user;
+        if (user) {
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            const userData = userDoc.data();
+
+            const hasSeenDisclaimer = localStorage.getItem(`disclaimer_${user.uid}`);
+
+            if (!hasSeenDisclaimer) {
+                document.getElementById('disclaimerModal').classList.add('active');
+                return;
+            }
+
+            const displayName = userData?.displayName || user.displayName;
+            const photoURL = sanitizeUrl(userData?.photoURL || user.photoURL);
+
+            document.getElementById('userMenu').style.display = 'flex';
+            document.getElementById('signInButton').style.display = 'none';
+            document.getElementById('userName').textContent = escapeHtml(displayName);
+            document.getElementById('userAvatar').src = photoURL || '';
+
+            await loadUserReactions(user.uid);
+
+            document.getElementById('newsDetailCommentsAuth').style.display = 'none';
+            document.getElementById('newsDetailCommentsSection').style.display = 'block';
+            document.getElementById('modCommentsAuth').style.display = 'none';
+            document.getElementById('modCommentsSection').style.display = 'block';
+        } else {
+            document.getElementById('userMenu').style.display = 'none';
+            document.getElementById('signInButton').style.display = 'flex';
+            document.getElementById('newsDetailCommentsAuth').style.display = 'block';
+            document.getElementById('newsDetailCommentsSection').style.display = 'none';
+            document.getElementById('modCommentsAuth').style.display = 'block';
+            document.getElementById('modCommentsSection').style.display = 'none';
+        }
+    });
+
+    async function loadUserReactions(userId) {
+        userLikes = {};
+        userDislikes = {};
+
+        const reactionsDoc = await getDoc(doc(db, 'user_reactions', userId));
+        if (reactionsDoc.exists()) {
+            const data = reactionsDoc.data();
+            userLikes = data.likes || {};
+            userDislikes = data.dislikes || {};
+        }
+    }
+
+    window.signInWithGoogle = async () => {
+        const provider = new GoogleAuthProvider();
+        try {
+            const result = await signInWithPopup(auth, provider);
+            const userDoc = await getDoc(doc(db, 'users', result.user.uid));
+            if (!userDoc.exists()) {
+                await setDoc(doc(db, 'users', result.user.uid), {
+                    displayName: result.user.displayName,
+                    photoURL: sanitizeUrl(result.user.photoURL),
+                    email: result.user.email,
+                    createdAt: serverTimestamp()
+                });
+            }
+            closeSignInOverlay();
+        } catch (error) {
+            console.error('Error signing in:', error);
+            alert('Error signing in. Please try again.');
+        }
+    };
+
+    window.signInWithEmail = async () => {
+        closeSignInOverlay();
+        const email = prompt('Enter your email:');
+        if (!email) return;
+
+        const password = prompt('Enter your password:');
+        if (!password) return;
+
+        try {
+            try {
+                const result = await signInWithEmailAndPassword(auth, email, password);
+                const userDoc = await getDoc(doc(db, 'users', result.user.uid));
+                if (!userDoc.exists()) {
+                    const displayName = validateUsername(prompt('Enter a username:'));
+                    if (!displayName) {
+                        alert('Invalid username');
+                        return;
+                    }
+                    await setDoc(doc(db, 'users', result.user.uid), {
+                        displayName: displayName,
+                        photoURL: null,
+                        email: email,
+                        createdAt: serverTimestamp()
+                    });
+                }
+            } catch (signInError) {
+                if (signInError.code === 'auth/user-not-found' || signInError.code === 'auth/wrong-password') {
+                    const createAccount = confirm('Account not found. Would you like to create a new account?');
+                    if (createAccount) {
+                        const result = await createUserWithEmailAndPassword(auth, email, password);
+                        const displayName = validateUsername(prompt('Enter a username:'));
+                        if (!displayName) {
+                            alert('Invalid username');
+                            return;
+                        }
+                        await setDoc(doc(db, 'users', result.user.uid), {
+                            displayName: displayName,
+                            photoURL: null,
+                            email: email,
+                            createdAt: serverTimestamp()
+                        });
+                    }
+                } else {
+                    throw signInError;
+                }
+            }
+        } catch (error) {
+            console.error('Error with email sign in:', error);
+            alert('Error signing in: ' + error.message);
+        }
+    };
+
+    window.signInWithPhone = async () => {
+        closeSignInOverlay();
+        const phoneNumber = prompt('Enter your phone number (with country code, e.g., +1234567890):');
+        if (!phoneNumber) return;
+
+        try {
+            if (!window.recaptchaVerifier) {
+                window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                    'size': 'invisible',
+                    'callback': (response) => {}
+                });
+            }
+
+            const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
+            window.confirmationResult = confirmationResult;
+
+            const code = prompt('Enter the verification code sent to your phone:');
+            if (!code) return;
+
+            const result = await confirmationResult.confirm(code);
+
+            const userDoc = await getDoc(doc(db, 'users', result.user.uid));
+            if (!userDoc.exists()) {
+                const displayName = validateUsername(prompt('Enter a username:'));
+                if (!displayName) {
+                    alert('Invalid username');
+                    return;
+                }
+                await setDoc(doc(db, 'users', result.user.uid), {
+                    displayName: displayName,
+                    photoURL: null,
+                    phone: phoneNumber,
+                    createdAt: serverTimestamp()
+                });
+            }
+        } catch (error) {
+            console.error('Error with phone sign in:', error);
+            alert('Error signing in: ' + error.message);
+
+            if (window.recaptchaVerifier) {
+                window.recaptchaVerifier.clear();
+                window.recaptchaVerifier = null;
+            }
+        }
+    };
+
+    window.openSignInOverlay = () => {
+        document.getElementById('signInOverlay').classList.add('active');
+    };
+
+    window.closeSignInOverlay = () => {
+        document.getElementById('signInOverlay').classList.remove('active');
+    };
+
+    window.openProfileModal = async () => {
+        if (!currentUser) return;
+
+        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        const userData = userDoc.data();
+
+        document.getElementById('modalAvatar').src = sanitizeUrl(userData?.photoURL || currentUser.photoURL) || '';
+        document.getElementById('usernameInput').value = escapeHtml(userData?.displayName || currentUser.displayName);
+        document.getElementById('profileModal').classList.add('active');
+    };
+
+    window.closeProfileModal = () => {
+        document.getElementById('profileModal').classList.remove('active');
+        document.getElementById('usernameError').style.display = 'none';
+    };
+
+    window.uploadAvatar = async () => {
+        const file = document.getElementById('avatarInput').files[0];
+        if (!file) return;
+
+        const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (!validTypes.includes(file.type)) {
+            alert('Please upload a valid image file (JPEG, PNG, GIF, or WebP)');
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            alert('File size must be less than 5MB');
+            return;
+        }
+
+        try {
+            const storageRef = ref(storage, `avatars/${currentUser.uid}/${Date.now()}_${file.name}`);
+            const uploadResult = await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(uploadResult.ref);
+
+            document.getElementById('modalAvatar').src = sanitizeUrl(downloadURL);
+            alert('Avatar uploaded! Click "Save Profile" to apply.');
+        } catch (error) {
+            console.error('Error uploading avatar:', error);
+            alert('Error uploading avatar: ' + error.message);
+        }
+    };
+
+    window.saveProfile = async () => {
+        if (!currentUser) return;
+
+        const newUsername = validateUsername(document.getElementById('usernameInput').value);
+        const newAvatarURL = sanitizeUrl(document.getElementById('modalAvatar').src);
+
+        if (!newUsername) {
+            document.getElementById('usernameError').textContent = 'Invalid username (no HTML allowed, 1-100 characters)';
+            document.getElementById('usernameError').style.display = 'block';
+            return;
+        }
+
+        const currentUserDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        const currentUsername = currentUserDoc.data()?.displayName;
+
+        if (newUsername !== currentUsername) {
+            const usernameQuery = query(collection(db, 'users'), where('displayName', '==', newUsername));
+            const querySnapshot = await getDocs(usernameQuery);
+
+            if (!querySnapshot.empty) {
+                document.getElementById('usernameError').textContent = 'Username already taken';
+                document.getElementById('usernameError').style.display = 'block';
+                return;
+            }
+        }
+
+        try {
+            await setDoc(doc(db, 'users', currentUser.uid), {
+                displayName: newUsername,
+                photoURL: newAvatarURL,
+                email: currentUser.email,
+                updatedAt: serverTimestamp()
+            }, { merge: true });
+
+            document.getElementById('userName').textContent = escapeHtml(newUsername);
+            document.getElementById('userAvatar').src = newAvatarURL;
+
+            closeProfileModal();
+            alert('Profile updated successfully!');
+        } catch (error) {
+            console.error('Error saving profile:', error);
+            alert('Error saving profile. Please try again.');
+        }
+    };
+
+    window.signOut = async () => {
+        try {
+            await firebaseSignOut(auth);
+        } catch (error) {
+            console.error('Error signing out:', error);
+        }
+    };
+
+    window.postComment = async (section, parentId = null) => {
+        if (!currentUser) {
+            alert('Please sign in to comment');
+            return;
+        }
+
+        const inputId = parentId ? `replyInput_${parentId}` : (section === 'newsDetail' ? 'newsDetailCommentInput' : 'modCommentInput');
+        const input = document.getElementById(inputId);
+        const sanitizedText = validateComment(input.value);
+
+        if (!sanitizedText) {
+            alert('Please enter a valid comment (no HTML allowed, 1-1000 characters)');
+            return;
+        }
+
+        try {
+            const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+            const userData = userDoc.data();
+
+            if (parentId) {
+                const commentRef = doc(db, `comments_${section}`, parentId);
+                await updateDoc(commentRef, {
+                    replies: arrayUnion({
+                        id: Date.now().toString(),
+                        text: sanitizedText,
+                        userId: currentUser.uid,
+                        userName: userData?.displayName || currentUser.displayName,
+                        userPhoto: sanitizeUrl(userData?.photoURL || currentUser.photoURL),
+                        timestamp: new Date(),
+                        likes: 0,
+                        dislikes: 0
+                    })
+                });
+            } else {
+                await addDoc(collection(db, `comments_${section}`), {
+                    text: sanitizedText,
+                    userId: currentUser.uid,
+                    userName: userData?.displayName || currentUser.displayName,
+                    userPhoto: sanitizeUrl(userData?.photoURL || currentUser.photoURL),
+                    likes: 0,
+                    dislikes: 0,
+                    timestamp: serverTimestamp(),
+                    replies: []
+                });
+            }
+
+            input.value = '';
+            if (parentId) {
+                document.getElementById(`replySection_${parentId}`).classList.remove('active');
+            }
+        } catch (error) {
+            console.error('Error posting comment:', error);
+            alert('Error posting comment. Please try again.');
+        }
+    };
+
+    function loadComments(section) {
+        const listId = section === 'newsDetail' ? 'newsDetailCommentsList' : 'modCommentsList';
+        const q = query(collection(db, `comments_${section}`), orderBy('timestamp', 'desc'));
+
+        onSnapshot(q, (snapshot) => {
+            const list = document.getElementById(listId);
+            list.innerHTML = '';
+
+            if (snapshot.empty) {
+                list.innerHTML = '<div style="color: #808080; text-align: center; padding: 2rem;">No comments yet. Be the first to comment!</div>';
+                return;
+            }
+
+            snapshot.forEach((docSnapshot) => {
+                const comment = docSnapshot.data();
+                const commentId = docSnapshot.id;
+
+                const commentEl = document.createElement('div');
+                commentEl.className = 'comment-item';
+
+                const userLikedThis = userLikes[`${section}_${commentId}`];
+                const userDislikedThis = userDislikes[`${section}_${commentId}`];
+
+                const sanitizedUserPhoto = sanitizeUrl(comment.userPhoto);
+
+                commentEl.innerHTML = `
+                    <div class="comment-header">
+                        <div class="comment-avatar">
+                            ${sanitizedUserPhoto ? `<img src="${sanitizedUserPhoto}" alt="${escapeHtml(comment.userName)}">` : escapeHtml(comment.userName.charAt(0))}
+                        </div>
+                        <div>
+                            <div style="color: #00c8ff; font-weight: bold;">${escapeHtml(comment.userName)}</div>
+                            <div style="color: #808080; font-size: 0.9rem;">${formatTimestamp(comment.timestamp)}</div>
+                        </div>
+                    </div>
+                    <p style="color: #e0e0e0; line-height: 1.6; margin-bottom: 1rem;">${escapeHtml(comment.text)}</p>
+                    <div class="comment-actions">
+                        <button onclick="likeComment('${section}', '${commentId}')" class="${userLikedThis ? 'active' : ''}">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                            </svg>
+                            ${comment.likes || 0}
+                        </button>
+                        <button class="dislike ${userDislikedThis ? 'active' : ''}" onclick="dislikeComment('${section}', '${commentId}')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path>
+                            </svg>
+                            ${comment.dislikes || 0}
+                        </button>
+                        <button onclick="toggleReply('${commentId}')">Reply</button>
+                        ${currentUser && currentUser.uid === comment.userId ?
+                            `<button onclick="deleteComment('${section}', '${commentId}')" style="border-color: rgba(255, 100, 100, 0.5); color: #ff6b6b;">Delete</button>` :
+                            ''}
+                    </div>
+
+                    <div class="reply-input" id="replySection_${commentId}">
+                        <textarea id="replyInput_${commentId}" placeholder="Write a reply..." style="width: 100%; min-height: 80px; background: rgba(10, 10, 20, 0.8); border: 1px solid rgba(0, 200, 255, 0.2); border-radius: 10px; padding: 1rem; color: #e0e0e0; font-size: 0.95rem; font-family: inherit; resize: vertical;"></textarea>
+                        <button onclick="postComment('${section}', '${commentId}')" class="cta-button" style="margin-top: 0.5rem; font-size: 0.85rem; padding: 0.5rem 1.2rem;">Post Reply</button>
+                    </div>
+
+                    ${comment.replies && comment.replies.length > 0 ? `
+                        <div class="reply-section">
+                            ${comment.replies.map(reply => {
+                                const userLikedReply = userLikes[`${section}_${commentId}_${reply.id}`];
+                                const userDislikedReply = userDislikes[`${section}_${commentId}_${reply.id}`];
+                                const sanitizedReplyPhoto = sanitizeUrl(reply.userPhoto);
+                                return `
+                                    <div style="margin-bottom: 1rem;">
+                                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.8rem;">
+                                            <div style="width: 35px; height: 35px; border-radius: 50%; background: linear-gradient(135deg, #0080ff, #0050ff); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 0.9rem; overflow: hidden;">
+                                                ${sanitizedReplyPhoto ? `<img src="${sanitizedReplyPhoto}" style="width: 100%; height: 100%; object-fit: cover;">` : escapeHtml(reply.userName.charAt(0))}
+                                            </div>
+                                            <div>
+                                                <div style="color: #00c8ff; font-weight: bold; font-size: 0.95rem;">${escapeHtml(reply.userName)}</div>
+                                                <div style="color: #808080; font-size: 0.85rem;">${formatTimestamp({toDate: () => new Date(reply.timestamp)})}</div>
+                                            </div>
+                                        </div>
+                                        <p style="color: #e0e0e0; line-height: 1.6; margin-bottom: 0.8rem; font-size: 0.95rem; margin-left: 3rem;">${escapeHtml(reply.text)}</p>
+                                        <div style="display: flex; gap: 1rem; align-items: center; margin-left: 3rem;">
+                                            <button onclick="likeReply('${section}', '${commentId}', '${reply.id}')" class="${userLikedReply ? 'active' : ''}" style="background: none; border: 1px solid rgba(0, 200, 255, 0.3); color: #00c8ff; padding: 0.3rem 0.8rem; border-radius: 5px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem;">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                                                </svg>
+                                                ${reply.likes || 0}
+                                            </button>
+                                            <button onclick="dislikeReply('${section}', '${commentId}', '${reply.id}')" class="dislike ${userDislikedReply ? 'active' : ''}" style="background: none; border: 1px solid rgba(255, 100, 100, 0.3); color: #ff6b6b; padding: 0.3rem 0.8rem; border-radius: 5px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem;">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path>
+                                                </svg>
+                                                ${reply.dislikes || 0}
+                                            </button>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    ` : ''}
+                `;
+                list.appendChild(commentEl);
+            });
+        });
+    }
+
+    window.toggleReply = (commentId) => {
+        const replySection = document.getElementById(`replySection_${commentId}`);
+        replySection.classList.toggle('active');
+    };
+
+    window.likeComment = async (section, commentId) => {
+        if (!currentUser) {
+            alert('Please sign in to like comments');
+            return;
+        }
+
+        const reactionKey = `${section}_${commentId}`;
+
+        if (reactionLocks[reactionKey]) {
+            return;
+        }
+        reactionLocks[reactionKey] = true;
+
+        const commentRef = doc(db, `comments_${section}`, commentId);
+        const reactionsRef = doc(db, 'user_reactions', currentUser.uid);
+
+        try {
+            const hadLiked = userLikes[reactionKey] === true;
+            const hadDisliked = userDislikes[reactionKey] === true;
+
+            if (hadLiked) {
+                delete userLikes[reactionKey];
+                await updateDoc(commentRef, { likes: increment(-1) });
+                await updateDoc(reactionsRef, {
+                    [`likes.${reactionKey}`]: deleteField()
+                });
+            } else {
+                userLikes[reactionKey] = true;
+                await updateDoc(commentRef, { likes: increment(1) });
+                await setDoc(reactionsRef, {
+                    likes: { [reactionKey]: true }
+                }, { merge: true });
+
+                if (hadDisliked) {
+                    delete userDislikes[reactionKey];
+                    await updateDoc(commentRef, { dislikes: increment(-1) });
+                    await updateDoc(reactionsRef, {
+                        [`dislikes.${reactionKey}`]: deleteField()
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Error liking comment:', error);
+        } finally {
+            setTimeout(() => {
+                delete reactionLocks[reactionKey];
+            }, 1000);
+        }
+    };
+
+    window.dislikeComment = async (section, commentId) => {
+        if (!currentUser) {
+            alert('Please sign in to dislike comments');
+            return;
+        }
+
+        const reactionKey = `${section}_${commentId}`;
+
+        if (reactionLocks[reactionKey]) {
+            return;
+        }
+        reactionLocks[reactionKey] = true;
+
+        const commentRef = doc(db, `comments_${section}`, commentId);
+        const reactionsRef = doc(db, 'user_reactions', currentUser.uid);
+
+        try {
+            const hadLiked = userLikes[reactionKey] === true;
+            const hadDisliked = userDislikes[reactionKey] === true;
+
+            if (hadDisliked) {
+                delete userDislikes[reactionKey];
+                await updateDoc(commentRef, { dislikes: increment(-1) });
+                await updateDoc(reactionsRef, {
+                    [`dislikes.${reactionKey}`]: deleteField()
+                });
+            } else {
+                userDislikes[reactionKey] = true;
+                await updateDoc(commentRef, { dislikes: increment(1) });
+                await setDoc(reactionsRef, {
+                    dislikes: { [reactionKey]: true }
+                }, { merge: true });
+
+                if (hadLiked) {
+                    delete userLikes[reactionKey];
+                    await updateDoc(commentRef, { likes: increment(-1) });
+                    await updateDoc(reactionsRef, {
+                        [`likes.${reactionKey}`]: deleteField()
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Error disliking comment:', error);
+        } finally {
+            setTimeout(() => {
+                delete reactionLocks[reactionKey];
+            }, 1000);
+        }
+    };
+
+    window.likeReply = async (section, commentId, replyId) => {
+        if (!currentUser) {
+            alert('Please sign in to like replies');
+            return;
+        }
+
+        const reactionKey = `${section}_${commentId}_${replyId}`;
+
+        if (reactionLocks[reactionKey]) {
+            return;
+        }
+        reactionLocks[reactionKey] = true;
+
+        const commentRef = doc(db, `comments_${section}`, commentId);
+        const reactionsRef = doc(db, 'user_reactions', currentUser.uid);
+
+        try {
+            const commentDoc = await getDoc(commentRef);
+            const replies = commentDoc.data().replies || [];
+            const replyIndex = replies.findIndex(r => r.id === replyId);
+
+            if (replyIndex === -1) return;
+
+            const hadLiked = userLikes[reactionKey];
+            const hadDisliked = userDislikes[reactionKey];
+
+            if (hadLiked) {
+                replies[replyIndex].likes = Math.max(0, (replies[replyIndex].likes || 0) - 1);
+                await updateDoc(reactionsRef, {
+                    [`likes.${reactionKey}`]: deleteField()
+                });
+                delete userLikes[reactionKey];
+            } else {
+                replies[replyIndex].likes = (replies[replyIndex].likes || 0) + 1;
+                await setDoc(reactionsRef, {
+                    likes: { [reactionKey]: true }
+                }, { merge: true });
+                userLikes[reactionKey] = true;
+
+                if (hadDisliked) {
+                    replies[replyIndex].dislikes = Math.max(0, (replies[replyIndex].dislikes || 0) - 1);
+                    await updateDoc(reactionsRef, {
+                        [`dislikes.${reactionKey}`]: deleteField()
+                    });
+                    delete userDislikes[reactionKey];
+                }
+            }
+
+            await updateDoc(commentRef, { replies: replies });
+        } catch (error) {
+            console.error('Error liking reply:', error);
+        } finally {
+            setTimeout(() => {
+                delete reactionLocks[reactionKey];
+            }, 500);
+        }
+    };
+
+    window.dislikeReply = async (section, commentId, replyId) => {
+        if (!currentUser) {
+            alert('Please sign in to dislike replies');
+            return;
+        }
+
+        const reactionKey = `${section}_${commentId}_${replyId}`;
+
+        if (reactionLocks[reactionKey]) {
+            return;
+        }
+        reactionLocks[reactionKey] = true;
+
+        const commentRef = doc(db, `comments_${section}`, commentId);
+        const reactionsRef = doc(db, 'user_reactions', currentUser.uid);
+
+        try {
+            const commentDoc = await getDoc(commentRef);
+            const replies = commentDoc.data().replies || [];
+            const replyIndex = replies.findIndex(r => r.id === replyId);
+
+            if (replyIndex === -1) return;
+
+            const hadLiked = userLikes[reactionKey];
+            const hadDisliked = userDislikes[reactionKey];
+
+            if (hadDisliked) {
+                replies[replyIndex].dislikes = Math.max(0, (replies[replyIndex].dislikes || 0) - 1);
+                await updateDoc(reactionsRef, {
+                    [`dislikes.${reactionKey}`]: deleteField()
+                });
+                delete userDislikes[reactionKey];
+            } else {
+                replies[replyIndex].dislikes = (replies[replyIndex].dislikes || 0) + 1;
+                await setDoc(reactionsRef, {
+                    dislikes: { [reactionKey]: true }
+                }, { merge: true });
+                userDislikes[reactionKey] = true;
+
+                if (hadLiked) {
+                    replies[replyIndex].likes = Math.max(0, (replies[replyIndex].likes || 0) - 1);
+                    await updateDoc(reactionsRef, {
+                        [`likes.${reactionKey}`]: deleteField()
+                    });
+                    delete userLikes[reactionKey];
+                }
+            }
+
+            await updateDoc(commentRef, { replies: replies });
+        } catch (error) {
+            console.error('Error disliking reply:', error);
+        } finally {
+            setTimeout(() => {
+                delete reactionLocks[reactionKey];
+            }, 500);
+        }
+    };
+
+    window.deleteComment = async (section, commentId) => {
+        if (!currentUser) return;
+
+        if (confirm('Are you sure you want to delete this comment?')) {
+            try {
+                await deleteDoc(doc(db, `comments_${section}`, commentId));
+            } catch (error) {
+                console.error('Error deleting comment:', error);
+                alert('Error deleting comment. Please try again.');
+            }
+        }
+    };
+
+    function formatTimestamp(timestamp) {
+        if (!timestamp) return 'Just now';
+
+        const date = timestamp.toDate();
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+        if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+        if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+
+        return date.toLocaleDateString();
+    }
+
+    loadComments('newsDetail');
+    loadComments('mod');
+
+    window.acceptDisclaimer = () => {
+        if (currentUser) {
+            localStorage.setItem(`disclaimer_${currentUser.uid}`, 'true');
+            document.getElementById('disclaimerModal').classList.remove('active');
+
+            window.location.reload();
+        }
+    };
+
+    document.getElementById('disclaimerCheckbox')?.addEventListener('change', (e) => {
+        const btn = document.getElementById('acceptDisclaimerBtn');
+        if (e.target.checked) {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+        } else {
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+        }
+    });
+
+    window.showModDetails = () => {
+        document.getElementById('modOptionsMenu').style.display = 'none';
+        document.getElementById('modDetail').classList.remove('active');
+        document.getElementById('modDetailsPage').classList.add('active');
+    };
+
+    window.showSourceCode = () => {
+        document.getElementById('modOptionsMenu').style.display = 'none';
+        document.getElementById('modDetail').classList.remove('active');
+        document.getElementById('sourceCodePage').classList.add('active');
+    };
+
+    window.closeModDetailsPage = () => {
+        document.getElementById('modDetailsPage').classList.remove('active');
+        document.getElementById('modDetail').classList.add('active');
+    };
+
+    window.closeSourceCodePage = () => {
+        document.getElementById('sourceCodePage').classList.remove('active');
+        document.getElementById('modDetail').classList.add('active');
+    };
+
+    window.openTermsOfService = () => {
+        document.getElementById('legal').classList.remove('active');
+        document.getElementById('termsOfServicePage').classList.add('active');
+    };
+
+    window.closeTermsOfService = () => {
+        document.getElementById('termsOfServicePage').classList.remove('active');
+        document.getElementById('legal').classList.add('active');
+    };
+
+    window.openPrivacyPolicy = () => {
+        document.getElementById('legal').classList.remove('active');
+        document.getElementById('privacyPolicyPage').classList.add('active');
+    };
+
+    window.closePrivacyPolicy = () => {
+        document.getElementById('privacyPolicyPage').classList.remove('active');
+        document.getElementById('legal').classList.add('active');
+    };
+
+    window.openDisclaimer = () => {
+        document.getElementById('legal').classList.remove('active');
+        document.getElementById('disclaimerPage').classList.add('active');
+    };
+
+    window.closeDisclaimer = () => {
+        document.getElementById('disclaimerPage').classList.remove('active');
+        document.getElementById('legal').classList.add('active');
+    };
+
+    document.getElementById('modOptionsBtn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const menu = document.getElementById('modOptionsMenu');
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    });
+
+    document.addEventListener('click', (e) => {
+        const menu = document.getElementById('modOptionsMenu');
+        const btn = document.getElementById('modOptionsBtn');
+        if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) {
+            menu.style.display = 'none';
+        }
+    });
+</script>
+
+<script>
+    const sidenav = document.getElementById('sidenav');
+    const mainContent = document.getElementById('mainContent');
+    const toggleBtn = document.getElementById('toggleBtn');
+    let isExpanded = false;
+
+    toggleBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        isExpanded = !isExpanded;
+
+        if (isExpanded) {
+            sidenav.classList.add('expanded');
+            mainContent.classList.add('collapsed');
+        } else {
+            sidenav.classList.remove('expanded');
+            mainContent.classList.remove('collapsed');
+        }
+    });
+
+    const exploreBtn = document.getElementById('exploreBtn');
+    if (exploreBtn) {
+        exploreBtn.addEventListener('click', () => {
+            const minecraftNav = document.querySelector('.nav-item[data-page="minecraft"]');
+            if (minecraftNav) {
+                minecraftNav.click();
+            }
+        });
+    }
+
+    const navItems = document.querySelectorAll('.nav-item');
+    const pages = document.querySelectorAll('.page-content');
+
+    navItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+
+            const disclaimerModal = document.getElementById('disclaimerModal');
+            if (disclaimerModal && disclaimerModal.classList.contains('active')) {
+                return;
+            }
+
+            navItems.forEach(nav => nav.classList.remove('active'));
+            item.classList.add('active');
+            pages.forEach(page => page.classList.remove('active'));
+
+            const pageId = item.getAttribute('data-page');
+            const targetPage = document.getElementById(pageId);
+            if (targetPage) {
+                targetPage.classList.add('active');
+            }
+        });
+    });
+
+    const modCard = document.getElementById('modCard');
+    const modDetailPage = document.getElementById('modDetail');
+    const minecraftPage = document.getElementById('minecraft');
+    const backButton = document.getElementById('backButton');
+
+    const newsDetailPage = document.getElementById('newsDetail');
+    const newsPage = document.getElementById('news');
+    const backToNews = document.getElementById('backToNews');
+
+    document.querySelectorAll('.news-card').forEach(card => {
+        card.addEventListener('mouseenter', () => {
+            card.style.transform = 'translateY(-5px)';
+            card.style.boxShadow = '0 10px 30px rgba(0, 200, 255, 0.3)';
+        });
+        card.addEventListener('mouseleave', () => {
+            card.style.transform = 'translateY(0)';
+            card.style.boxShadow = 'none';
+        });
+
+        card.addEventListener('click', () => {
+            const disclaimerModal = document.getElementById('disclaimerModal');
+            if (disclaimerModal && disclaimerModal.classList.contains('active')) {
+                return;
+            }
+            newsPage.classList.remove('active');
+            newsDetailPage.classList.add('active');
+        });
+    });
+
+    if (backToNews) {
+        backToNews.addEventListener('click', () => {
+            newsDetailPage.classList.remove('active');
+            newsPage.classList.add('active');
+        });
+
+        backToNews.addEventListener('mouseenter', () => {
+            backToNews.style.background = 'rgba(0, 200, 255, 0.1)';
+        });
+        backToNews.addEventListener('mouseleave', () => {
+            backToNews.style.background = 'none';
+        });
+    }
+
+    if (modCard) {
+        modCard.addEventListener('mouseenter', () => {
+            modCard.style.transform = 'translateY(-5px)';
+            modCard.style.boxShadow = '0 10px 30px rgba(0, 200, 255, 0.3)';
+        });
+        modCard.addEventListener('mouseleave', () => {
+            modCard.style.transform = 'translateY(0)';
+            modCard.style.boxShadow = 'none';
+        });
+
+        modCard.addEventListener('click', () => {
+            const disclaimerModal = document.getElementById('disclaimerModal');
+            if (disclaimerModal && disclaimerModal.classList.contains('active')) {
+                return;
+            }
+            minecraftPage.classList.remove('active');
+            modDetailPage.classList.add('active');
+        });
+    }
+
+    if (backButton) {
+        backButton.addEventListener('click', () => {
+            modDetailPage.classList.remove('active');
+            minecraftPage.classList.add('active');
+        });
+
+        backButton.addEventListener('mouseenter', () => {
+            backButton.style.background = 'rgba(0, 200, 255, 0.1)';
+        });
+        backButton.addEventListener('mouseleave', () => {
+            backButton.style.background = 'none';
+        });
+    }
+
+    const versionsToggle = document.getElementById('versionsToggle');
+    const versionsContent = document.getElementById('versionsContent');
+    const versionsArrow = document.getElementById('versionsArrow');
+
+    if (versionsToggle) {
+        versionsToggle.addEventListener('click', () => {
+            const isOpen = versionsContent.style.display === 'block';
+            versionsContent.style.display = isOpen ? 'none' : 'block';
+            versionsArrow.textContent = isOpen ? '▼' : '▲';
+        });
+    }
+
+    const fabricToggle = document.getElementById('fabricToggle');
+    const fabricContent = document.getElementById('fabricContent');
+    const fabricArrow = document.getElementById('fabricArrow');
+    if (fabricToggle) {
+        fabricToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = fabricContent.style.display === 'block';
+            fabricContent.style.display = isOpen ? 'none' : 'block';
+            fabricArrow.textContent = isOpen ? '▼' : '▲';
+        });
+    }
+
+    const forgeToggle = document.getElementById('forgeToggle');
+    const forgeContent = document.getElementById('forgeContent');
+    const forgeArrow = document.getElementById('forgeArrow');
+    if (forgeToggle) {
+        forgeToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = forgeContent.style.display === 'block';
+            forgeContent.style.display = isOpen ? 'none' : 'block';
+            forgeArrow.textContent = isOpen ? '▼' : '▲';
+        });
+    }
+
+    const neoforgeToggle = document.getElementById('neoforgeToggle');
+    const neoforgeContent = document.getElementById('neoforgeContent');
+    const neoforgeArrow = document.getElementById('neoforgeArrow');
+    if (neoforgeToggle) {
+        neoforgeToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = neoforgeContent.style.display === 'block';
+            neoforgeContent.style.display = isOpen ? 'none' : 'block';
+            neoforgeArrow.textContent = isOpen ? '▼' : '▲';
+        });
+    }
+
+    let scrollTimeout;
+    let isScrolling = false;
+
+    window.addEventListener('wheel', (e) => {
+        const signInOverlay = document.getElementById('signInOverlay');
+        const modDetailsPage = document.getElementById('modDetailsPage');
+        const sourceCodePage = document.getElementById('sourceCodePage');
+        const termsOfServicePage = document.getElementById('termsOfServicePage');
+        const privacyPolicyPage = document.getElementById('privacyPolicyPage');
+        const disclaimerPage = document.getElementById('disclaimerPage');
+        const disclaimerModal = document.getElementById('disclaimerModal');
+
+        if ((modDetailPage && modDetailPage.classList.contains('active')) ||
+            (newsDetailPage && newsDetailPage.classList.contains('active')) ||
+            (modDetailsPage && modDetailsPage.classList.contains('active')) ||
+            (sourceCodePage && sourceCodePage.classList.contains('active')) ||
+            (termsOfServicePage && termsOfServicePage.classList.contains('active')) ||
+            (privacyPolicyPage && privacyPolicyPage.classList.contains('active')) ||
+            (disclaimerPage && disclaimerPage.classList.contains('active')) ||
+            (disclaimerModal && disclaimerModal.classList.contains('active')) ||
+            (signInOverlay && signInOverlay.classList.contains('active'))) {
+            return;
+        }
+
+        if (isScrolling) return;
+
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+            isScrolling = false;
+        }, 100);
+
+        const activeNav = document.querySelector('.nav-item.active');
+        const navArray = Array.from(navItems);
+        const currentIndex = navArray.indexOf(activeNav);
+
+        let nextIndex;
+        if (e.deltaY > 0) {
+            nextIndex = (currentIndex + 1) % navArray.length;
+        } else {
+            nextIndex = (currentIndex - 1 + navArray.length) % navArray.length;
+        }
+
+        if (nextIndex !== currentIndex) {
+            isScrolling = true;
+            navArray[nextIndex].click();
+        }
+    }, { passive: true });
+
+    const canvas = document.getElementById('canvas-bg');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    let angleX = 0;
+    let angleY = 0;
+    const cubeSize = 150;
+
+    function project(x, y, z) {
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const scale = 400 / (400 + z);
+        return {
+            x: centerX + x * scale,
+            y: centerY + y * scale,
+            scale: scale
+        };
+    }
+
+    function rotateX(x, y, z, angle) {
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        return {
+            x: x,
+            y: y * cos - z * sin,
+            z: y * sin + z * cos
+        };
+    }
+
+    function rotateY(x, y, z, angle) {
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        return {
+            x: x * cos + z * sin,
+            y: y,
+            z: -x * sin + z * cos
+        };
+    }
+
+    function drawCube() {
+        ctx.fillStyle = '#0a0a0a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const vertices = [
+            [-cubeSize, -cubeSize, -cubeSize],
+            [cubeSize, -cubeSize, -cubeSize],
+            [cubeSize, cubeSize, -cubeSize],
+            [-cubeSize, cubeSize, -cubeSize],
+            [-cubeSize, -cubeSize, cubeSize],
+            [cubeSize, -cubeSize, cubeSize],
+            [cubeSize, cubeSize, cubeSize],
+            [-cubeSize, cubeSize, cubeSize]
+        ];
+
+        const rotatedVertices = vertices.map(v => {
+            let rotated = rotateX(v[0], v[1], v[2], angleX);
+            rotated = rotateY(rotated.x, rotated.y, rotated.z, angleY);
+            return project(rotated.x, rotated.y, rotated.z);
+        });
+
+        const faces = [
+            [0, 1, 2, 3],
+            [4, 5, 6, 7],
+            [0, 1, 5, 4],
+            [2, 3, 7, 6],
+            [0, 3, 7, 4],
+            [1, 2, 6, 5]
+        ];
+
+        const colors = [
+            'rgba(0, 200, 255, 0.4)',
+            'rgba(0, 180, 255, 0.4)',
+            'rgba(0, 160, 240, 0.4)',
+            'rgba(0, 140, 220, 0.4)',
+            'rgba(0, 120, 200, 0.4)',
+            'rgba(0, 100, 180, 0.4)'
+        ];
+
+        faces.forEach((face, i) => {
+            ctx.beginPath();
+            ctx.moveTo(rotatedVertices[face[0]].x, rotatedVertices[face[0]].y);
+            for (let j = 1; j < face.length; j++) {
+                ctx.lineTo(rotatedVertices[face[j]].x, rotatedVertices[face[j]].y);
+            }
+            ctx.closePath();
+            ctx.fillStyle = colors[i];
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0, 200, 255, 0.6)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        });
+
+        angleX += 0.005;
+        angleY += 0.008;
+        requestAnimationFrame(drawCube);
+    }
+
+    drawCube();
+
+    function updateCountdown() {
+        const releaseDate = new Date('999-12-31T00:00:00').getTime();
+        const now = new Date().getTime();
+        const distance = releaseDate - now;
+
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        const countdownEl = document.getElementById('countdown');
+        if (countdownEl) {
+            if (distance < 0) {
+                countdownEl.innerHTML = "Out Now!";
+            } else {
+                countdownEl.innerHTML = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+            }
+        }
+    }
+
+    setInterval(updateCountdown, 1000);
+    updateCountdown();
+</script>
+</body>
+</html>
