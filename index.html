@@ -1189,17 +1189,13 @@
     let hasAcceptedDisclaimer = false;
 
     onAuthStateChanged(auth, async (user) => {
-        currentUser = user;
-        if (user) {
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
-            const userData = userDoc.data();
+    currentUser = user;
+    if (user) {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        const userData = userDoc.data();
 
-            const hasSeenDisclaimer = localStorage.getItem(`disclaimer_${user.uid}`);
-
-            if (!hasSeenDisclaimer) {
-                document.getElementById('disclaimerModal').classList.add('active');
-                return;
-            }
+        document.getElementById('disclaimerModal').classList.add('active');
+        return;
 
             const displayName = userData?.displayName || user.displayName;
             const photoURL = sanitizeUrl(userData?.photoURL || user.photoURL);
@@ -1875,13 +1871,23 @@
     loadComments('mod');
 
     window.acceptDisclaimer = () => {
-        if (currentUser) {
-            localStorage.setItem(`disclaimer_${currentUser.uid}`, 'true');
-            document.getElementById('disclaimerModal').classList.remove('active');
+    if (currentUser) {
+        document.getElementById('disclaimerModal').classList.remove('active');
 
-            window.location.reload();
-        }
-    };
+        const displayName = currentUser.displayName;
+        const photoURL = sanitizeUrl(currentUser.photoURL);
+
+        document.getElementById('userMenu').style.display = 'flex';
+        document.getElementById('signInButton').style.display = 'none';
+        document.getElementById('userName').textContent = escapeHtml(displayName);
+        document.getElementById('userAvatar').src = photoURL || '';
+
+        document.getElementById('newsDetailCommentsAuth').style.display = 'none';
+        document.getElementById('newsDetailCommentsSection').style.display = 'block';
+        document.getElementById('modCommentsAuth').style.display = 'none';
+        document.getElementById('modCommentsSection').style.display = 'block';
+    }
+};
 
     document.getElementById('disclaimerCheckbox')?.addEventListener('change', (e) => {
         const btn = document.getElementById('acceptDisclaimerBtn');
@@ -2298,7 +2304,7 @@
     drawCube();
 
     function updateCountdown() {
-        const releaseDate = new Date('999-12-31T00:00:00').getTime();
+        const releaseDate = new Date('2025-11-28T17:00:00').getTime();
         const now = new Date().getTime();
         const distance = releaseDate - now;
 
