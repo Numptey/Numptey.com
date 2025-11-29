@@ -881,7 +881,7 @@
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                             <div style="background: rgba(0, 200, 255, 0.1); padding: 1rem; border-radius: 10px;">
                                 <div style="color: #808080; font-size: 0.9rem;">Downloads</div>
-                                <div style="color: #00c8ff; font-size: 1.8rem; font-weight: bold;">0</div>
+                                <div id="total-download-count" style="color: #00c8ff; font-size: 1.8rem; font-weight: bold;">0</div>
                             </div>
                             <div style="background: rgba(0, 200, 255, 0.1); padding: 1rem; border-radius: 10px;">
                                 <div style="color: #808080; font-size: 0.9rem;">Version</div>
@@ -1181,6 +1181,12 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
     const storage = getStorage(app);
+
+    window.db = db;
+    window.doc = doc;
+    window.getDoc = getDoc;
+    window.setDoc = setDoc;
+    window.updateDoc = updateDoc;
 
     let currentUser = null;
     let userLikes = {};
@@ -2325,6 +2331,500 @@
 
     setInterval(updateCountdown, 1000);
     updateCountdown();
+
+    const availableVersions = [
+    'All',
+    '1.21.10',
+    '1.21.9',
+    '1.21.8',
+    '1.21.7',
+    '1.21.6',
+    '1.21.5',
+    '1.21.4',
+    '1.21.3',
+    '1.21.2',
+    '1.21.1',
+    '1.21',
+    '1.20.6',
+    '1.20.5',
+    '1.20.4',
+    '1.20.3',
+    '1.20.2',
+    '1.20.1',
+    '1.20',
+    '1.19.4',
+    '1.19.3',
+    '1.19.2',
+    '1.19.1',
+    '1.19',
+    '1.18.2',
+    '1.18.1',
+    '1.18',
+    '1.17.1',
+    '1.17',
+    '1.16.5',
+    '1.16.4',
+    '1.16.3',
+    '1.16.2',
+    '1.16.1',
+    '1.16',
+    '1.15.2',
+    '1.15.1',
+    '1.15',
+    '1.14.4',
+    '1.14.3',
+    '1.14.2',
+    '1.14.1',
+    '1.14',
+    '1.13.2',
+    '1.13.1',
+    '1.13',
+    '1.12.2',
+    '1.12.1',
+    '1.12',
+    '1.11.2',
+    '1.11.1',
+    '1.11',
+    '1.10.2',
+    '1.10.1',
+    '1.10',
+    '1.9.4',
+    '1.9.3',
+    '1.9.2',
+    '1.9.1',
+    '1.9',
+    '1.8.9',
+    '1.8.8',
+    '1.8.7',
+    '1.8.6',
+    '1.8.5',
+    '1.8.4',
+    '1.8.3',
+    '1.8.2',
+    '1.8.1',
+    '1.8',
+    '1.7.10',
+    '1.7.9',
+    '1.7.8',
+    '1.7.7',
+    '1.7.6',
+    '1.7.5',
+    '1.7.4',
+    '1.7.3',
+    '1.7.2',
+    '1.7.1',
+    '1.7',
+    '1.6.4',
+    '1.6.3',
+    '1.6.2',
+    '1.6.1',
+    '1.6',
+    '1.5.2',
+    '1.5.1',
+    '1.5',
+    '1.4.7',
+    '1.4.6',
+    '1.4.5',
+    '1.4.4',
+    '1.4.3',
+    '1.4.2',
+    '1.4.1',
+    '1.4',
+    '1.3.2',
+    '1.3.1',
+    '1.3',
+    '1.2.5',
+    '1.2.4',
+    '1.2.3',
+    '1.2.2',
+    '1.2.1',
+    '1.1',
+    '1.0'
+    ];
+
+    const modVersionData = {
+        'fabric': {
+             '1.21.1': [
+            {
+                id: 'sinisterity-beta1-fabric-1.21.1',
+                name: 'Sinisterity Beta 1 (Fabric 1.21.1)',
+                downloads: 0,
+                size: '50.143 MB',
+                releaseDate: 'Nov 28, 2025',
+                filePath: 'assets/minecraft/mods/fabric/Sinisterity/Sinisterity Beta 1 (Fabric 1.21.1).jar'
+            }
+        ]
+    },
+    'forge': {},
+    'neoforge': {}
+    };
+
+    let downloadCounts = {};
+
+    async function loadDownloadCounts() {
+       try {
+         const downloadDoc = await getDoc(doc(db, 'mod_downloads', 'sinisterity'));
+
+          if (downloadDoc.exists()) {
+            downloadCounts = downloadDoc.data();
+
+             Object.keys(modVersionData).forEach(loader => {
+                const loaderData = modVersionData[loader] || {};
+                Object.keys(loaderData).forEach(version => {
+                    loaderData[version].forEach(mod => {
+                        const sanitizedVersion = version.replace(/\./g, '_');
+                        const sanitizedModId = mod.id.replace(/\./g, '_');
+                        const versionKey = `${loader}_${sanitizedVersion}_${sanitizedModId}`;
+                        const count = downloadCounts.versions?.[versionKey] || 0;
+                        mod.downloads = count;
+                    });
+                });
+             });
+
+            updateAllDownloadDisplays();
+          } else {
+            downloadCounts = { total: 0, versions: {} };
+        }
+    } catch (error) {
+        downloadCounts = { total: 0, versions: {} };
+    }
+}
+
+    async function incrementDownloadCount(loader, version, modId) {
+     const sanitizedVersion = version.replace(/\./g, '_');
+     const sanitizedModId = modId.replace(/\./g, '_');
+     const versionKey = `${loader}_${sanitizedVersion}_${sanitizedModId}`;
+
+    try {
+        const downloadRef = doc(db, 'mod_downloads', 'sinisterity');
+        const downloadDoc = await getDoc(downloadRef);
+
+        if (downloadDoc.exists()) {
+            const currentData = downloadDoc.data();
+            const currentVersionCount = currentData.versions?.[versionKey] || 0;
+            const currentTotal = currentData.total || 0;
+
+            const updatedVersions = { ...(currentData.versions || {}) };
+            updatedVersions[versionKey] = currentVersionCount + 1;
+
+            await setDoc(downloadRef, {
+                total: currentTotal + 1,
+                versions: updatedVersions
+            });
+
+            if (!downloadCounts.versions) downloadCounts.versions = {};
+            downloadCounts.versions[versionKey] = currentVersionCount + 1;
+            downloadCounts.total = currentTotal + 1;
+
+            if (modVersionData[loader] && modVersionData[loader][version]) {
+                const mod = modVersionData[loader][version].find(m => m.id === modId);
+
+                if (mod) {
+                    mod.downloads = currentVersionCount + 1;
+                }
+            }
+        } else {
+            await setDoc(downloadRef, {
+                total: 1,
+                versions: {
+                    [versionKey]: 1
+                }
+            });
+
+            downloadCounts.total = 1;
+            downloadCounts.versions = { [versionKey]: 1 };
+
+            if (modVersionData[loader] && modVersionData[loader][version]) {
+                const mod = modVersionData[loader][version].find(m => m.id === modId);
+
+                if (mod) {
+                    mod.downloads = 1;
+                }
+            }
+        }
+
+        updateAllDownloadDisplays();
+
+        const versionCountElement = document.getElementById(`download-count-${modId}`);
+
+        if (versionCountElement) {
+            versionCountElement.textContent = (downloadCounts.versions[versionKey] || 0).toLocaleString();
+        }
+    } catch (error) {
+        throw error;
+    }
+}
+
+    function updateAllDownloadDisplays() {
+       console.log('Updating all download displays with:', downloadCounts);
+
+       const mainDownloadDiv = document.getElementById('total-download-count');
+
+    if (mainDownloadDiv) {
+        mainDownloadDiv.textContent = (downloadCounts.total || 0).toLocaleString();
+    }
+
+    Object.keys(modVersionData).forEach(loader => {
+        const loaderData = modVersionData[loader] || {};
+        Object.keys(loaderData).forEach(version => {
+            loaderData[version].forEach(mod => {
+                const sanitizedVersion = version.replace(/\./g, '_');
+                const sanitizedModId = mod.id.replace(/\./g, '_');
+                const versionKey = `${loader}_${sanitizedVersion}_${sanitizedModId}`;
+                mod.downloads = downloadCounts.versions?.[versionKey] || 0;
+
+                const countElement = document.getElementById(`download-count-${mod.id}`);
+
+                if (countElement) {
+                    countElement.textContent = mod.downloads.toLocaleString();
+                }
+            });
+        });
+    });
+}
+
+      let pendingDownload = null;
+
+      function showDownloadWarning(filePath, fileName, loader, version, modId) {
+         pendingDownload = { filePath, fileName, loader, version, modId };
+
+         const warningModal = document.createElement('div');
+         warningModal.id = 'downloadWarningModal';
+         warningModal.style.cssText = `
+         position: fixed;
+         top: 0;
+         left: 0;
+         width: 100%;
+         height: 100%;
+         background: rgba(0, 0, 0, 0.9);
+         z-index: 3001;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+     `;
+
+    warningModal.innerHTML = `
+        <div style="background: rgba(20, 20, 30, 0.95); border: 1px solid rgba(0, 200, 255, 0.3); border-radius: 20px; padding: 3rem; max-width: 600px; width: 90%; position: relative; max-height: 80vh; overflow-y: auto;">
+            <button onclick="closeDownloadWarning()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: 2px solid #00c8ff; color: #00c8ff; font-size: 1.5rem; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.background='rgba(0, 200, 255, 0.1)'" onmouseout="this.style.background='none'">X</button>
+
+            <h2 style="color: #00c8ff; font-size: 2rem; margin-bottom: 2rem; text-align: center;">Warning</h2>
+
+            <div style="background: rgba(255, 200, 0, 0.1); border: 1px solid rgba(255, 200, 0, 0.5); border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem;">
+                <p style="color: #ffc800; line-height: 1.6; font-size: 1rem; margin-bottom: 1rem;">Important Safety Information</strong></p>
+                <p style="color: #e0e0e0; line-height: 1.6; font-size: 0.95rem;">This mod can interact with your computer on a system level and can use personal information (personal information is never saved to any server) for the purpose of invoking fear into the user. These interactions include: Location approximation, IP usage, Potential name usage (real name), Temporarily blocked apps (including Task Manager), Malware like visuals drawn directly on the user's desktop, Faux Blue Screen of Death, Shutdown of computer, and files being placed into the "Startup Folder" (all files in the startup folder are cleaned after they have completed their execution).</p>
+            </div>
+
+            <button onclick="confirmDownload()" style="width: 100%; background: linear-gradient(135deg, #00c8ff, #0080ff); border: none; color: white; padding: 1rem; border-radius: 10px; cursor: pointer; font-size: 1.1rem; font-weight: 600; transition: all 0.3s; margin-bottom: 1rem;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 15px rgba(0, 200, 255, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                I Understand (Download)
+            </button>
+
+            <p style="color: #808080; text-align: center; font-size: 0.85rem;">
+                By downloading, you agree to use this mod at your own discretion
+            </p>
+        </div>
+    `;
+
+    document.body.appendChild(warningModal);
+    document.body.style.overflow = 'hidden';
+    }
+
+    window.closeDownloadWarning = function() {
+       const modal = document.getElementById('downloadWarningModal');
+
+       if (modal) {
+        modal.remove();
+        document.body.style.overflow = '';
+        pendingDownload = null;
+    }
+};
+
+    window.confirmDownload = async function() {
+       if (pendingDownload) {
+        const { filePath, fileName, loader, version, modId } = pendingDownload;
+        closeDownloadWarning();
+        await downloadMod(filePath, fileName, loader, version, modId);
+    }
+};
+
+    async function downloadMod(filePath, fileName, loader, version, modId) {
+
+       try {
+           await incrementDownloadCount(loader, version, modId);
+           console.log('Download count incremented successfully');
+
+           const link = document.createElement('a');
+           link.href = filePath;
+           link.download = fileName || filePath.split('/').pop();
+           document.body.appendChild(link);
+           link.click();
+           document.body.removeChild(link);
+       } catch (error) {
+           const link = document.createElement('a');
+           link.href = filePath;
+           link.download = fileName || filePath.split('/').pop();
+           document.body.appendChild(link);
+           link.click();
+           document.body.removeChild(link);
+       }
+    }
+
+    function createModVersionCard(mod, loader, version) {
+       const fileName = mod.filePath ? mod.filePath.split('/').pop() : 'mod.jar';
+       const sanitizedVersion = version.replace(/\./g, '_');
+       const sanitizedModId = mod.id.replace(/\./g, '_');
+       const versionKey = `${loader}_${sanitizedVersion}_${sanitizedModId}`;
+       const currentDownloads = downloadCounts.versions?.[versionKey] || mod.downloads || 0;
+
+    return `
+        <div style="background: rgba(0, 200, 255, 0.05); border: 1px solid rgba(0, 200, 255, 0.2); border-radius: 8px; padding: 1rem; margin-bottom: 0.8rem;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.8rem;">
+                <h4 style="color: #00c8ff; font-size: 1.1rem; margin: 0;">${mod.name}</h4>
+                <span style="background: rgba(0, 200, 255, 0.2); color: #00c8ff; padding: 0.3rem 0.8rem; border-radius: 5px; font-size: 0.85rem;">${mod.size}</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 1rem;">
+                <div>
+                    <div style="color: #808080; font-size: 0.85rem;">Downloads</div>
+                    <div style="color: #e0e0e0; font-size: 1.1rem; font-weight: bold;" id="download-count-${mod.id}">${currentDownloads.toLocaleString()}</div>
+                </div>
+                <div>
+                    <div style="color: #808080; font-size: 0.85rem;">Released</div>
+                    <div style="color: #e0e0e0; font-size: 1.1rem; font-weight: bold;">${mod.releaseDate}</div>
+                </div>
+            </div>
+            <button onclick="showDownloadWarning('${mod.filePath}', '${fileName}', '${loader}', '${version}', '${mod.id}')" style="width: 100%; background: linear-gradient(135deg, #00c8ff, #0080ff); border: none; color: white; padding: 0.7rem; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: 500; transition: all 0.3s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 5px 15px rgba(0, 200, 255, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                Download
+            </button>
+        </div>
+    `;
+}
+
+    function createVersionDropdown(loader) {
+       const versions = availableVersions;
+       const loaderData = modVersionData[loader] || {};
+
+       let html = '<div style="margin-top: 0.5rem;">';
+
+       html += `
+        <div style="margin-bottom: 1rem;">
+            <button id="${loader}VersionToggle" style="width: 100%; background: rgba(0, 200, 255, 0.08); border: 1px solid rgba(0, 200, 255, 0.25); color: #00c8ff; padding: 0.7rem; border-radius: 8px; cursor: pointer; font-size: 0.95rem; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s;">
+                <span>Select Version</span>
+                <span id="${loader}VersionArrow">▼</span>
+            </button>
+            <div id="${loader}VersionList" style="display: none; margin-top: 0.5rem; max-height: 300px; overflow-y: auto; background: rgba(0, 200, 255, 0.03); border: 1px solid rgba(0, 200, 255, 0.15); border-radius: 8px; padding: 0.5rem;">
+       `;
+
+       versions.forEach(version => {
+        const hasVersions = version === 'All' || loaderData[version];
+        const buttonStyle = hasVersions ? 'cursor: pointer; opacity: 1;' : 'cursor: not-allowed; opacity: 0.4;';
+
+        html += `
+            <button
+                ${hasVersions ? `onclick="selectVersion('${loader}', '${version}')"` : ''}
+                style="width: 100%; background: ${hasVersions ? 'rgba(0, 200, 255, 0.05)' : 'rgba(100, 100, 100, 0.05)'}; border: 1px solid rgba(0, 200, 255, 0.2); color: ${hasVersions ? '#00c8ff' : '#666'}; padding: 0.6rem; border-radius: 6px; margin-bottom: 0.3rem; font-size: 0.9rem; text-align: left; transition: all 0.2s; ${buttonStyle}"
+                ${hasVersions ? `onmouseover="this.style.background='rgba(0, 200, 255, 0.12)'" onmouseout="this.style.background='rgba(0, 200, 255, 0.05)'"` : ''}
+            >
+                ${version}
+            </button>
+        `;
+    });
+
+    html += `
+            </div>
+        </div>
+    `;
+
+    html += `<div id="${loader}VersionDisplay" style="display: none;"></div>`;
+    html += '</div>';
+
+    return html;
+    }
+
+    function displayVersions(loader, version) {
+       const displayArea = document.getElementById(`${loader}VersionDisplay`);
+
+       if (!displayArea) return;
+
+       const loaderData = modVersionData[loader] || {};
+       let html = '';
+
+       if (version === 'All') {
+        Object.keys(loaderData).forEach(ver => {
+            loaderData[ver].forEach(mod => {
+                html += createModVersionCard(mod, loader, ver);
+            });
+        });
+    } else {
+        const versionMods = loaderData[version] || [];
+        versionMods.forEach(mod => {
+            html += createModVersionCard(mod, loader, version);
+        });
+    }
+
+    if (!html) {
+        html = '<div style="color: #808080; text-align: center; padding: 1rem; font-size: 0.95rem;">No versions available for this selection.</div>';
+    }
+
+    displayArea.innerHTML = html;
+    displayArea.style.display = 'block';
+    }
+
+    window.selectVersion = function(loader, version) {
+       const toggleBtn = document.getElementById(`${loader}VersionToggle`);
+
+       if (toggleBtn) {
+        toggleBtn.querySelector('span:first-child').textContent = version;
+    }
+
+    const versionList = document.getElementById(`${loader}VersionList`);
+    const arrow = document.getElementById(`${loader}VersionArrow`);
+    if (versionList && arrow) {
+        versionList.style.display = 'none';
+        arrow.textContent = '▼';
+    }
+
+    displayVersions(loader, version);
+    };
+
+    function initializeVersionDropdowns() {
+       const fabricContent = document.getElementById('fabricContent');
+
+       if (fabricContent) {
+        fabricContent.innerHTML = createVersionDropdown('fabric');
+    }
+
+       const forgeContent = document.getElementById('forgeContent');
+
+       if (forgeContent) {
+        forgeContent.innerHTML = createVersionDropdown('forge');
+    }
+
+       const neoforgeContent = document.getElementById('neoforgeContent');
+
+       if (neoforgeContent) {
+        neoforgeContent.innerHTML = createVersionDropdown('neoforge');
+    }
+
+    ['fabric', 'forge', 'neoforge'].forEach(loader => {
+        const toggle = document.getElementById(`${loader}VersionToggle`);
+        const list = document.getElementById(`${loader}VersionList`);
+        const arrow = document.getElementById(`${loader}VersionArrow`);
+
+        if (toggle && list && arrow) {
+            toggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isOpen = list.style.display === 'block';
+                list.style.display = isOpen ? 'none' : 'block';
+                arrow.textContent = isOpen ? '▼' : '▲';
+            });
+        }
+    });
+}
+
+   setTimeout(() => {
+       loadDownloadCounts().then(() => {
+           initializeVersionDropdowns();
+       });
+   }, 100);
 </script>
 </body>
 </html>
